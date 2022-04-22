@@ -9,11 +9,12 @@
 
 #include "llvm/Support/Casting.h"
 
+#include "revng/Model/Binary.h"
 #include "revng/Pipeline/AllRegistries.h"
 #include "revng/Pipeline/Kind.h"
 #include "revng/Pipeline/Target.h"
+#include "revng/Pipeline/TupleTreeInvalidationEvent.h"
 #include "revng/Pipes/Kinds.h"
-#include "revng/Pipes/ModelInvalidationEvent.h"
 #include "revng/Pipes/RootKind.h"
 #include "revng/Support/FunctionTags.h"
 #include "revng/TupleTree/Visits.h"
@@ -38,6 +39,7 @@ IsolatedRootKind::symbolToTarget(const llvm::Function &Symbol) const {
   return std::nullopt;
 }
 
+using ModelInvalidationEvent = TupleTreeInvalidationEvent<model::Binary>;
 void RootKind::getInvalidations(TargetsList &ToRemove,
                                 const InvalidationEventBase &Base) const {
 

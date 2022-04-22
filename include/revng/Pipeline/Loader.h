@@ -16,7 +16,6 @@
 #include "revng/Pipeline/GenericLLVMPipe.h"
 #include "revng/Pipeline/LLVMContainer.h"
 #include "revng/Pipeline/Runner.h"
-#include "revng/Pipeline/SavableObject.h"
 #include "revng/Support/Assert.h"
 #include "revng/TupleTree/Introspection.h"
 #include "revng/TupleTree/TupleTree.h"
@@ -34,6 +33,7 @@ struct PipeInvocation {
   std::vector<std::string> UsedContainers;
   std::vector<std::string> Passes = {};
   std::vector<std::string> EnabledWhen = {};
+  std::string Name = "";
 };
 
 struct ArtifactsDeclaration {
@@ -50,6 +50,7 @@ struct StepDeclaration {
   std::vector<PipeInvocation> Pipes;
   std::vector<std::string> EnabledWhen = {};
   ArtifactsDeclaration Artifacts = {};
+  std::vector<PipeInvocation> Analysis = {};
 };
 
 struct PipelineDeclaration {
@@ -154,12 +155,14 @@ private:
   llvm::Error parseStepDeclaration(Runner &Runner,
                                    const StepDeclaration &,
                                    std::string &LastAddedStep) const;
-  llvm::Error
+
+  llvm::Expected<PipeWrapper>
   parseInvocation(Step &Step, const PipeInvocation &Invocation) const;
   llvm::Error
   parseContainerDeclaration(Runner &Runner, const ContainerDeclaration &) const;
 
-  llvm::Error parseLLVMPass(Step &Step, const PipeInvocation &Invocation) const;
+  llvm::Expected<PipeWrapper>
+  parseLLVMPass(const PipeInvocation &Invocation) const;
 
   llvm::Expected<std::unique_ptr<LLVMPassWrapperBase>>
   loadPassFromName(llvm::StringRef Name) const;
@@ -182,6 +185,7 @@ struct llvm::yaml::MappingTraits<pipeline::PipeInvocation> {
     TheIO.mapRequired("UsedContainers", Info.UsedContainers);
     TheIO.mapOptional("Passes", Info.Passes);
     TheIO.mapOptional("EnabledWhen", Info.EnabledWhen);
+    TheIO.mapOptional("Name", Info.Name);
   }
 };
 
@@ -194,6 +198,7 @@ struct llvm::yaml::MappingTraits<pipeline::StepDeclaration> {
     TheIO.mapOptional("Pipes", Info.Pipes);
     TheIO.mapOptional("EnabledWhen", Info.EnabledWhen);
     TheIO.mapOptional("Artifacts", Info.Artifacts);
+    TheIO.mapOptional("Analysis", Info.Analysis);
   }
 };
 

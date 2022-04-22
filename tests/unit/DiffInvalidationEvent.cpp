@@ -6,8 +6,8 @@
 //
 
 #include "revng/Model/Binary.h"
+#include "revng/Pipeline/TupleTreeInvalidationEvent.h"
 #include "revng/Pipes/Kinds.h"
-#include "revng/Pipes/ModelInvalidationEvent.h"
 #include "revng/Support/MetaAddress.h"
 
 #define BOOST_TEST_MODULE PipelineC
@@ -18,6 +18,8 @@ bool init_unit_test();
 
 using namespace revng::pipes;
 using namespace pipeline;
+
+using ModelInvalidationEvent = TupleTreeInvalidationEvent<model::Binary>;
 
 BOOST_AUTO_TEST_SUITE(ModelInvalidationDiffSuite)
 

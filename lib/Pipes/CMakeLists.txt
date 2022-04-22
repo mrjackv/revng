@@ -11,9 +11,6 @@ revng_add_library_internal(
   ImportBinaryPipe.cpp
   LiftPipe.cpp
   LinkSupportPipe.cpp
-  LLVMContextWrapper.cpp
-  ModelGlobal.cpp
-  ModelInvalidationEvent.cpp
   PipelineManager.cpp
   Pipes.cpp
   RootKind.cpp

@@ -50,14 +50,15 @@ class LLVMPipelineRegistry : public Registry {
 
 public:
   void registerContainersAndPipes(Loader &Loader) override {
+    using namespace llvm;
     auto &Ctx = Loader.getContext();
-    auto MaybeLLVMContext = Ctx.getGlobal<LLVMContextWrapper>("LLVMContext");
+    auto MaybeLLVMContext = Ctx.get<LLVMContext>("LLVMContext");
 
     if (!MaybeLLVMContext)
       return;
 
     auto &PipeContext = Loader.getContext();
-    auto &LLVMContext = (*MaybeLLVMContext)->getContext();
+    auto &LLVMContext = **MaybeLLVMContext;
     auto Factory = makeDefaultLLVMContainerFactory(PipeContext, LLVMContext);
 
     Loader.addContainerFactory("LLVMContainer", std::move(Factory));

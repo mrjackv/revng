@@ -10,9 +10,12 @@
 #include "llvm/Support/Error.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include "revng/Pipeline/ContainerSet.h"
 #include "revng/Pipeline/Step.h"
+#include "revng/Pipeline/Target.h"
+#include "revng/Support/Assert.h"
 #include "revng/Support/Debug.h"
 
 using namespace llvm;
@@ -104,6 +107,23 @@ Step::cloneAndRun(Context &Ctx, ContainerSet &&Input, llvm::raw_ostream *OS) {
   Containers.mergeBack(std::move(Input));
   InputEnumeration = deduceResults(InputEnumeration);
   return Containers.cloneFiltered(InputEnumeration);
+}
+
+void Step::runAnalysis(llvm::StringRef AnalysisName,
+                       Context &Ctx,
+                       const ContainerToTargetsMap &Targets,
+                       llvm::raw_ostream *OS) {
+  ContainerToTargetsMap Map = Containers.enumerate();
+  revng_check(Map.contains(Targets),
+              "An analysis was requested, but not all targets are aviable");
+
+  auto &TheAnalysis = getAnalysis(AnalysisName);
+
+  if (OS)
+    explainExecutedPipe(Ctx, TheAnalysis, OS);
+
+  auto Cloned = Containers.cloneFiltered(Targets);
+  TheAnalysis->run(Ctx, Cloned);
 }
 
 void Step::removeSatisfiedGoals(TargetsList &RequiredInputs,

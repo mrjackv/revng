@@ -7,18 +7,18 @@
 
 #include "revng/Pipeline/InvalidationEvent.h"
 #include "revng/Pipeline/Kind.h"
+#include "revng/Pipeline/Runner.h"
 
 using namespace pipeline;
 
 llvm::Error InvalidationEventBase::apply(Runner &Runner) const {
-  Runner::InvalidationMap Map;
+  InvalidationMap Map;
   getInvalidations(Runner, Map);
   if (auto Error = Runner.getInvalidations(Map); Error)
     return Error;
   return Runner.invalidate(Map);
 }
 
-using InvalidationMap = Runner::InvalidationMap;
 void InvalidationEventBase::getInvalidations(const Runner &Runner,
                                              InvalidationMap &Map) const {
   for (const auto &Step : Runner) {

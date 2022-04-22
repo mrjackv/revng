@@ -9,6 +9,7 @@
 #include "revng/Pipeline/CopyPipe.h"
 #include "revng/Pipes/Kinds.h"
 #include "revng/Pipes/ModelGlobal.h"
+#include "revng/Support/Assert.h"
 
 using std::string;
 using namespace llvm;
@@ -90,7 +91,7 @@ public:
 
   llvm::Error extractOne(llvm::raw_ostream &OS,
                          const pipeline::Target &Target) const override {
-    revng_check(false);
+    revng_abort();
     return llvm::Error::success();
   }
 

@@ -26,6 +26,14 @@ Steps:
    Artifacts:
      Container: module.ll
      Kind: Root
+   Analysis:
+     - Name: Efa
+       Type: LLVMPipe
+       UsedContainers: [module.ll]
+       Passes: [collect-functions-from-callees,
+                detect-abi,
+                collect-functions-from-unused-addresses,
+                detect-abi]
  - Name:            Recompile
    Pipes:
      - Type:             LinkSupport

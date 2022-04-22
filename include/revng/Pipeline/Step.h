@@ -17,6 +17,7 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/Support/Error.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include "revng/ADT/STLExtras.h"
 #include "revng/Pipeline/ContainerSet.h"
@@ -32,6 +33,12 @@ namespace pipeline {
 /// Furthermore a step has a set of containers associated to it as well that
 /// will contain the element used for perform the computations.
 class Step {
+public:
+  using AnalysisMapType = llvm::StringMap<PipeWrapper>;
+  using AnalysisIterator = AnalysisMapType::iterator;
+  using AnalysisValueType = AnalysisMapType::value_type;
+  using ConstAnalysisIterator = AnalysisMapType::const_iterator;
+
 private:
   struct ArtifactsInfo {
     std::string Container;
@@ -49,6 +56,7 @@ private:
   std::vector<PipeWrapper> Pipes;
   Step *PreviousStep;
   ArtifactsInfo Artifacts;
+  AnalysisMapType AnalysisMap;
 
 public:
   template<typename... PipeWrapperTypes>
@@ -69,6 +77,32 @@ public:
     Containers(std::move(Containers)),
     Pipes({ std::forward<PipeWrapperTypes>(PipeWrappers)... }),
     PreviousStep(&PreviousStep) {}
+
+public:
+  void addAnalysis(llvm::StringRef Name, PipeWrapper Analysis) {
+    AnalysisMap.try_emplace(Name, std::move(Analysis));
+  }
+
+  const PipeWrapper &getAnalysis(llvm::StringRef Name) const {
+    return AnalysisMap.find(Name)->second;
+  }
+
+  PipeWrapper &getAnalysis(llvm::StringRef Name) {
+    return AnalysisMap.find(Name)->second;
+  }
+
+  AnalysisIterator analysisBegin() { return AnalysisMap.begin(); }
+  AnalysisIterator analysisEnd() { return AnalysisMap.end(); }
+  ConstAnalysisIterator analysisBegin() const { return AnalysisMap.begin(); }
+  ConstAnalysisIterator analysisEnd() const { return AnalysisMap.end(); }
+  llvm::iterator_range<AnalysisIterator> analysis() {
+    return llvm::make_range(AnalysisMap.begin(), AnalysisMap.end());
+  }
+  llvm::iterator_range<ConstAnalysisIterator> analysis() const {
+    return llvm::make_range(AnalysisMap.begin(), AnalysisMap.end());
+  }
+
+  size_t getAnalysisSize() const { return AnalysisMap.size(); }
 
 public:
   llvm::StringRef getName() const { return Name; }
@@ -121,6 +155,11 @@ public:
   }
 
 public:
+  void runAnalysis(llvm::StringRef AnalysisName,
+                   Context &Ctx,
+                   const ContainerToTargetsMap &Targets,
+                   llvm::raw_ostream *OS = nullptr);
+
   /// Clones the Targets from the backing containers of this step
   /// and excutes all the pipes in sequence contained by this step
   /// and returns the transformed containers.

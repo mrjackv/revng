@@ -149,7 +149,7 @@ public:
 
   llvm::Error
   extractOne(llvm::raw_ostream &OS, const Target &Target) const override {
-    revng_check(false);
+    revng_abort();
     return llvm::Error::success();
   }
 
@@ -1053,7 +1053,7 @@ public:
 
   llvm::Error
   extractOne(llvm::raw_ostream &OS, const Target &Target) const override {
-    revng_check(false);
+    revng_abort();
     return llvm::Error::success();
   }
 
@@ -1270,7 +1270,7 @@ BOOST_AUTO_TEST_CASE(MultiStepInvalidationTest) {
 
   BOOST_TEST(C2End.get(ToProduce) == 1);
 
-  pipeline::Runner::InvalidationMap Invalidations;
+  pipeline::InvalidationMap Invalidations;
   Invalidations[Name][CName].push_back(T);
 
   auto Error = Pipeline.getInvalidations(Invalidations);

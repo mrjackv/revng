@@ -14,7 +14,6 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include "revng/Pipeline/ContainerFactorySet.h"
-#include "revng/Pipeline/Context.h"
 #include "revng/Pipeline/KindsRegistry.h"
 #include "revng/Pipeline/Step.h"
 #include "revng/Pipeline/Target.h"
@@ -22,6 +21,7 @@
 
 namespace pipeline {
 
+class Context;
 /// A Runner is a wrapper around a pipeline structure and the context needed to
 /// run it.
 /// It is the top level object on which to invoke operations.
@@ -45,7 +45,6 @@ public:
   using const_iterator = DereferenceIteratorType<Vector::const_iterator>;
 
   using State = llvm::StringMap<ContainerToTargetsMap>;
-  using InvalidationMap = llvm::StringMap<ContainerToTargetsMap>;
 
 public:
   explicit Runner(Context &C) : TheContext(&C) {}
@@ -64,9 +63,7 @@ public:
 
   const Context &getContext() const { return *TheContext; }
 
-  const KindsRegistry &getKindsRegistry() const {
-    return TheContext->getKindsRegistry();
-  }
+  const KindsRegistry &getKindsRegistry() const;
 
 public:
   Step &operator[](llvm::StringRef Name) { return getStep(Name); }
@@ -80,6 +77,15 @@ public:
   const Step &getStep(llvm::StringRef Name) const {
     revng_assert(Steps.find(Name) != Steps.end());
     return Steps.find(Name)->second;
+  }
+
+  bool containsAnalysis(llvm::StringRef Name) const {
+    for (const auto &Step : Steps)
+      for (const auto &Analysis : Step.second.analysis())
+        if (Analysis.first() == Name)
+          return true;
+
+    return false;
   }
 
 public:
@@ -115,6 +121,12 @@ public:
   llvm::Error run(llvm::StringRef EndingStepName,
                   const ContainerToTargetsMap &Targets,
                   llvm::raw_ostream *DiagnosticLog = nullptr);
+
+  llvm::Expected<DiffMap>
+  runAnalysis(llvm::StringRef AnalysisName,
+              llvm::StringRef StepName,
+              const ContainerToTargetsMap &Targets,
+              llvm::raw_ostream *DiagnosticLog = nullptr);
 
   void addContainerFactory(llvm::StringRef Name, ContainerFactory Entry) {
     ContainerFactoriesRegistry.registerContainerFactory(Name, std::move(Entry));

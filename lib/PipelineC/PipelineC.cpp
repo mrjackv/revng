@@ -19,15 +19,16 @@
 #include "revng/Pipeline/Container.h"
 #include "revng/Pipeline/Runner.h"
 #include "revng/Pipeline/Target.h"
+#include "revng/Pipeline/TupleTreeInvalidationEvent.h"
 #include "revng/PipelineC/PipelineC.h"
 #include "revng/Pipes/ModelGlobal.h"
-#include "revng/Pipes/ModelInvalidationEvent.h"
 #include "revng/Pipes/PipelineManager.h"
 #include "revng/Support/Assert.h"
 #include "revng/TupleTree/TupleTreeDiff.h"
 
 using namespace pipeline;
 using namespace ::revng::pipes;
+using ModelInvalidationEvent = TupleTreeInvalidationEvent<model::Binary>;
 
 void rp_set_custom_abort_hook(AbortHook Hook) {
   setAbortHook(Hook);
@@ -182,6 +183,18 @@ const char *rp_step_get_name(rp_step *step) {
   return step->getName().data();
 }
 
+int rp_step_get_analysis_count(rp_step *step) {
+  return step->getAnalysisSize();
+}
+
+rp_analysis *rp_step_get_analysis(rp_step *step, int index) {
+  revng_check(step != nullptr);
+  if (index < rp_step_get_analysis_count(step))
+    return nullptr;
+
+  return &*(std::next(step->analysisBegin(), index));
+}
+
 rp_container *
 rp_step_get_container(rp_step *step, rp_container_identifier *container) {
   revng_check(step != nullptr);
@@ -225,6 +238,49 @@ const char *rp_kind_get_name(rp_kind *kind) {
 rp_kind *rp_kind_get_parent(rp_kind *kind) {
   revng_check(kind != nullptr);
   return kind->parent();
+}
+
+rp_diff_map *rp_manager_run_analysis(rp_manager *manager,
+                                     uint64_t targets_count,
+                                     rp_target *targets[],
+                                     const char *step_name,
+                                     const char *analysis_name,
+                                     rp_container *container) {
+  revng_check(manager != nullptr);
+  revng_check(targets_count != 0);
+  revng_check(targets != nullptr);
+  revng_check(analysis_name != nullptr);
+  revng_check(container != nullptr);
+
+  ContainerToTargetsMap Targets;
+  for (size_t I = 0; I < targets_count; I++)
+    Targets[container->second->name()].push_back(*targets[I]);
+
+  auto MaybeDiffs = manager->getRunner().runAnalysis(analysis_name,
+                                                     step_name,
+                                                     Targets);
+  if (not MaybeDiffs) {
+    llvm::consumeError(MaybeDiffs.takeError());
+    return nullptr;
+  }
+
+  return new rp_diff_map(std::move(*MaybeDiffs));
+}
+
+void rp_diff_map_destroy(rp_diff_map *to_free) {
+  delete to_free;
+}
+
+const char *rp_diff_map_get_diff(rp_diff_map *map, const char *global_name) {
+  auto It = map->find(global_name);
+  if (It == map->end())
+    return nullptr;
+
+  std::string S;
+  llvm::raw_string_ostream OS(S);
+  It->second.serialize(OS);
+  OS.flush();
+  return copyString(S);
 }
 
 const char *rp_manager_produce_targets(rp_manager *manager,
@@ -452,6 +508,16 @@ rp_manager_create_global_copy(rp_manager *manager, const char *global_name) {
   return copyString(Out);
 }
 
+int rp_manager_get_globals_count(rp_manager *manager) {
+  return manager->context().getGlobals().size();
+}
+
+const char *rp_manager_get_global_name(rp_manager *manager, int index) {
+  if (index < rp_manager_get_globals_count(manager))
+    return copyString(manager->context().getGlobals().getName(index).str());
+  return nullptr;
+}
+
 bool rp_manager_set_global(rp_manager *manager,
                            const char *serialized,
                            const char *global_name) {
@@ -532,4 +598,15 @@ rp_container_extract_one(rp_container *container, rp_target *target) {
   Serialized.flush();
 
   return copyString(Out);
+}
+
+int rp_analysis_get_arguments_count(rp_analysis *analysis) {
+  return analysis->second->getRunningContainersNames().size();
+}
+
+const char *rp_analysis_get_argument_name(rp_analysis *analysis, int index) {
+  revng_check(index < rp_analysis_get_arguments_count(analysis));
+  std::string Name = analysis->second->getRunningContainersNames()[index];
+
+  return copyString(Name);
 }
