@@ -408,6 +408,16 @@ bool rp_container_store(rp_container *container, const char *path);
  */
 bool rp_container_load(rp_container *container, const char *path);
 
+/**
+ * \return the serialized content of the element associated to the provided
+ * target,
+ *
+ * \note Target must be already present in container
+ *
+ */
+const char *
+rp_container_extract_one(rp_container *container, rp_target *target);
+
 /** \} */
 
 /**

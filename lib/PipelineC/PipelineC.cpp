@@ -521,3 +521,15 @@ const char *rp_container_get_mime(rp_container *container) {
   revng_check(container != nullptr);
   return container->getValue()->mimeType().c_str();
 }
+
+const char *
+rp_container_extract_one(rp_container *container, rp_target *target) {
+  revng_check(container->second->enumerate().contains(*target));
+
+  std::string Out;
+  llvm::raw_string_ostream Serialized(Out);
+  llvm::cantFail(container->second->extractOne(Serialized, *target));
+  Serialized.flush();
+
+  return copyString(Out);
+}

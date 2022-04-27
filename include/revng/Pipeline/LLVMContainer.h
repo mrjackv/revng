@@ -107,6 +107,13 @@ public:
                                       this->name());
   }
 
+  llvm::Error
+  extractOne(llvm::raw_ostream &OS, const Target &Target) const override {
+    TargetsList List({ Target });
+    auto Module = cloneFiltered(List);
+    return Module->serialize(OS);
+  }
+
 public:
   llvm::Error serialize(llvm::raw_ostream &OS) const final {
     getModule().print(OS, nullptr);

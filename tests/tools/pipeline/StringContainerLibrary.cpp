@@ -88,6 +88,12 @@ public:
     return llvm::Error::success();
   }
 
+  llvm::Error extractOne(llvm::raw_ostream &OS,
+                         const pipeline::Target &Target) const override {
+    revng_check(false);
+    return llvm::Error::success();
+  }
+
   const std::set<std::string> &getStrings() const { return ContainedStrings; }
 
 private:

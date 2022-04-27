@@ -56,6 +56,9 @@ public:
 
   llvm::Error deserialize(const llvm::MemoryBuffer &Buffer) override;
 
+  llvm::Error extractOne(llvm::raw_ostream &OS,
+                         const pipeline::Target &Target) const override;
+
 protected:
   void mergeBackImpl(StringMapContainer &&Container) override;
 

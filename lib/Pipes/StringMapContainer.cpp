@@ -35,6 +35,22 @@ StringMapContainer::cloneFiltered(const TargetsList &Targets) const {
   return Clone;
 }
 
+llvm::Error
+StringMapContainer::extractOne(llvm::raw_ostream &OS,
+                               const pipeline::Target &Target) const {
+  revng_check(Target.getPathComponents().back().isSingle());
+  revng_check(&Target.getKind() == TheKind);
+
+  std::string MetaAddrStr = Target.getPathComponents().back().getName();
+
+  auto It = Map.find(MetaAddress::fromString(MetaAddrStr));
+  revng_check(It != Map.end());
+
+  OS << It->second;
+
+  return llvm::Error::success();
+}
+
 void StringMapContainer::mergeBackImpl(StringMapContainer &&Other) {
   // Stuff in Other should overwrite what's in this container.
   // We first merge this->Map into Other.Map (which keeps Other's version if

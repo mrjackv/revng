@@ -37,6 +37,7 @@
 #include "revng/Pipeline/PathComponent.h"
 #include "revng/Pipeline/Runner.h"
 #include "revng/Pipeline/Target.h"
+#include "revng/Support/Assert.h"
 
 static char LLVMName = ' ';
 
@@ -144,6 +145,12 @@ public:
 
     Map.erase(Target);
     return true;
+  }
+
+  llvm::Error
+  extractOne(llvm::raw_ostream &OS, const Target &Target) const override {
+    revng_check(false);
+    return llvm::Error::success();
   }
 
   static char ID;
@@ -1041,6 +1048,12 @@ public:
 
   llvm::Error deserialize(const llvm::MemoryBuffer &Buffer) final {
 
+    return llvm::Error::success();
+  }
+
+  llvm::Error
+  extractOne(llvm::raw_ostream &OS, const Target &Target) const override {
+    revng_check(false);
     return llvm::Error::success();
   }
 
