@@ -47,9 +47,12 @@ class TranslateCommand(Command):
 
         command = [
             "pipeline",
-            "output::Translated",
-            "--step",
-            step_name,
+        ]
+
+        command.append("Lift:Efa:module.ll::Root")
+
+        command = command + [
+            f"{step_name}:output::Translated",
             "-i",
             "begin:input:" + args.input[0],
             "-o",
