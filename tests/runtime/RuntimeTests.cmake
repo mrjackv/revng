@@ -83,7 +83,7 @@ macro(artifact_handler CATEGORY INPUT_FILE CONFIGURATION OUTPUT TARGET_NAME)
         "./bin/revng"
         pipeline
         Lift:DetectABI:module.ll::Root
-        YieldAssembly:assembly.html.yml:html:FunctionAssemblyHTML
+        YieldAssembly:assembly.html.yml:*:FunctionAssemblyHTML
         -i
         "begin:input:${INPUT_FILE}"
         -o

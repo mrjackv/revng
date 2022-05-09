@@ -4,10 +4,22 @@
 
 From:            Isolate
 Containers:
- - Name:            assembly.html.yml
+ - Name:            assembly-internal.yml
+   Type:            FunctionAssemblyInternal
+ - Name:            assembly-html.yml
    Type:            FunctionAssemblyHTML
 Steps:
+ - Name:            ProcessAssembly
+   Pipes:
+     - Type:             process-assembly
+       UsedContainers: [input, module.ll, assembly-internal.yml]
+   Artifacts:
+     Container: assembly-internal.yml
+     Kind: FunctionAssemblyInternal
  - Name:            YieldAssembly
    Pipes:
      - Type:             yield-assembly
-       UsedContainers: [input, module.ll, assembly.html.yml]
+       UsedContainers: [assembly-internal.yml, assembly-html.yml]
+   Artifacts:
+     Container: assembly-html.yml
+     Kind: FunctionAssemblyHTML
