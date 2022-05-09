@@ -11,9 +11,9 @@
 #include "revng/Pipes/Kinds.h"
 #include "revng/Pipes/ModelGlobal.h"
 #include "revng/Pipes/Yield/Assembly.h"
-#include "revng/Yield/Assembly/Assembly.h"
 #include "revng/Yield/Assembly/DisassemblyHelper.h"
 #include "revng/Yield/HTML.h"
+#include "revng/Yield/Internal/Function.h"
 
 namespace revng::pipes {
 
