@@ -8,6 +8,7 @@
 #include "llvm/Support/FormatVariadic.h"
 
 #include "revng/Model/Binary.h"
+#include "revng/Yield/ControlFlow/FallthroughDetection.h"
 #include "revng/Yield/HTML.h"
 #include "revng/Yield/Internal/Function.h"
 
@@ -527,20 +528,10 @@ static std::string basicBlock(const yield::BasicBlock &BasicBlock,
   // Blocks are strung together if there's no reason to keep them separate.
   // This determines whether this is the last block in the current string
   // (if `NextBlock` is `nullptr`) or if there's continuation.
-  const yield::BasicBlock *NextBlock = nullptr;
-  for (const MetaAddress &Target : BasicBlock.Targets) {
-    if (Target.isValid() && Target == BasicBlock.NextAddress) {
-      auto Iterator = Function.BasicBlocks.find(Target);
-      if (Iterator != Function.BasicBlocks.end()) {
-        using namespace yield::BasicBlockType;
-        if (shouldSkip<ShouldMergeFallthroughTargets>(Iterator->Type)) {
-          revng_assert(NextBlock == nullptr,
-                       "Multiple targets with the same address");
-          NextBlock = &*Iterator;
-        }
-      }
-    }
-  }
+  constexpr bool MergeFallthrough = ShouldMergeFallthroughTargets;
+  auto NextBlock = yield::cfg::detectFallthrough<MergeFallthrough>(BasicBlock,
+                                                                   Function,
+                                                                   Binary);
 
   // Compile the list of delayed instructions so the corresponding comment
   // can be emited.
