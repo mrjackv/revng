@@ -189,7 +189,7 @@ int rp_step_get_analysis_count(rp_step *step) {
 
 rp_analysis *rp_step_get_analysis(rp_step *step, int index) {
   revng_check(step != nullptr);
-  if (index < rp_step_get_analysis_count(step))
+  if (index >= rp_step_get_analysis_count(step))
     return nullptr;
 
   return &*(std::next(step->analysisBegin(), index));
@@ -598,6 +598,10 @@ rp_container_extract_one(rp_container *container, rp_target *target) {
   Serialized.flush();
 
   return copyString(Out);
+}
+
+const char *rp_analysis_get_name(rp_analysis *analysis) {
+  return analysis->first().data();
 }
 
 int rp_analysis_get_arguments_count(rp_analysis *analysis) {
