@@ -2,12 +2,14 @@
 # This file is distributed under the MIT License. See LICENSE.md for details.
 #
 
+import asyncio
 import json
 import logging
 from base64 import b64decode
+from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Awaitable, Callable, Dict, List, Optional, TypeVar
 
 from starlette.datastructures import UploadFile
 
@@ -21,6 +23,16 @@ from revng.api.rank import Rank
 from revng.api.step import Step
 
 from .util import clean_step_list, str_to_snake_case
+
+executor = ThreadPoolExecutor(1)
+
+T = TypeVar("T")
+
+
+def run_in_executor(function: Callable[[], T]) -> Awaitable[T]:
+    loop = asyncio.get_event_loop()
+    return loop.run_in_executor(executor, function)
+
 
 query = QueryType()
 mutation = MutationType()
@@ -39,14 +51,18 @@ async def resolve_root(_, info):
 async def resolve_produce(obj, info, *, step, container, target_list, only_if_ready=False):
     manager: Manager = info.context["manager"]
     targets = target_list.split(",")
-    return manager.produce_target(step, targets, container, only_if_ready)
+    return await run_in_executor(
+        lambda: manager.produce_target(step, targets, container, only_if_ready)
+    )
 
 
 @query.field("produce_artifacts")
 async def resolve_produce_artifacts(obj, info, *, step, paths=None, only_if_ready=False):
     manager: Manager = info.context["manager"]
     target_paths = paths.split(",") if paths is not None else None
-    return manager.produce_target(step, target_paths, only_if_ready=only_if_ready)
+    return await run_in_executor(
+        lambda: manager.produce_target(step, target_paths, only_if_ready=only_if_ready)
+    )
 
 
 @query.field("step")
@@ -104,7 +120,10 @@ async def resolve_upload_file(_, info, *, file: UploadFile, container: str):
 @mutation.field("run_analysis")
 async def resolve_run_analysis(_, info, *, step: str, analysis: str, container: str, targets: str):
     manager: Manager = info.context["manager"]
-    return json.dumps(manager.run_analysis(step, analysis, {container: targets.split(",")}))
+    result = await run_in_executor(
+        lambda: manager.run_analysis(step, analysis, {container: targets.split(",")})
+    )
+    return json.dumps(result)
 
 
 @mutation.field("analyses")
@@ -283,9 +302,13 @@ class BindableGen:
 
     @staticmethod
     def gen_step_handle(step: Step):
-        def rank_step_handle(obj, info, *, only_if_ready=False):
+        async def rank_step_handle(obj, info, *, only_if_ready=False):
             manager: Manager = info.context["manager"]
-            return manager.produce_target(step.name, obj["_target"], only_if_ready=only_if_ready)
+            return await run_in_executor(
+                lambda: manager.produce_target(
+                    step.name, obj["_target"], only_if_ready=only_if_ready
+                )
+            )
 
         return rank_step_handle
 
@@ -293,7 +316,7 @@ class BindableGen:
     def gen_step_analysis_handle(step: Step, analysis: Analysis):
         argument_mapping = {str_to_snake_case(a.name): a.name for a in analysis.arguments()}
 
-        def step_analysis_handle(_, info, **kwargs):
+        async def step_analysis_handle(_, info, **kwargs):
             manager: Manager = info.context["manager"]
             target_mapping = {}
             for container_name, targets in kwargs.items():
@@ -301,7 +324,9 @@ class BindableGen:
                     raise ValueError("Passed non-existant container name")
                 target_mapping[argument_mapping[container_name]] = targets.split(",")
 
-            result = manager.run_analysis(step.name, analysis.name, target_mapping)
+            result = await run_in_executor(
+                lambda: manager.run_analysis(step.name, analysis.name, target_mapping)
+            )
             return json.dumps(result)
 
         return step_analysis_handle
