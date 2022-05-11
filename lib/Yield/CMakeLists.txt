@@ -11,6 +11,7 @@ revng_add_analyses_library_internal(
   Assembly/Plain.cpp
   ControlFlow/Extraction.cpp
   ControlFlow/FallthroughDetection.cpp
+  ControlFlow/NodeSizeCalculation.cpp
   ControlFlow/SVG.cpp
   Internal/Dump.cpp
   Internal/Verify.cpp)
