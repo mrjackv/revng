@@ -189,11 +189,11 @@ rp_kind *rp_manager_get_kind(rp_manager *manager, uint64_t index);
  *
  * \return 0 if an error was encountered, the serialized container otherwise
  */
-const char *rp_manager_produce_targets(rp_manager *manager,
-                                       uint64_t targets_count,
-                                       rp_target *targets[],
-                                       rp_step *step,
-                                       rp_container *container);
+const char * /*owning*/ rp_manager_produce_targets(rp_manager *manager,
+                                                   uint64_t targets_count,
+                                                   rp_target *targets[],
+                                                   rp_step *step,
+                                                   rp_container *container);
 
 /**
  * Request to run the required analysis
@@ -203,12 +203,12 @@ const char *rp_manager_produce_targets(rp_manager *manager,
  * \return 0 if an error was encountered, the owning diff map of affected global
  * objects
  */
-rp_diff_map *rp_manager_run_analysis(rp_manager *manager,
-                                     uint64_t targets_count,
-                                     rp_target *targets[],
-                                     const char *step_name,
-                                     const char *analysis_name,
-                                     rp_container *container);
+rp_diff_map * /*owning*/ rp_manager_run_analysis(rp_manager *manager,
+                                                 uint64_t targets_count,
+                                                 rp_target *targets[],
+                                                 const char *step_name,
+                                                 const char *analysis_name,
+                                                 rp_container *container);
 
 /**
  *
@@ -320,12 +320,13 @@ rp_analysis *rp_step_get_analysis(rp_step *step, int index);
 int rp_analysis_get_arguments_count(rp_analysis *analysis);
 
 /**
- * \return a non owning pointer to the name of the container used as index
+ * \return a owning pointer to the name of the container used as index
  * argument of the analysis of this step.
  *
  * index must be less than rp_step_get_analysis_arguments_count(step)
  */
-const char *rp_analysis_get_argument_name(rp_analysis *analysis, int index);
+const char * /*owning*/
+rp_analysis_get_argument_name(rp_analysis *analysis, int index);
 
 /**
  * \return the quantity of kinds that can be accepted by a analysis
@@ -482,7 +483,7 @@ bool rp_container_load(rp_container *container, const char *path);
  * \note Target must be already present in container
  *
  */
-const char *
+const char * /*owning*/
 rp_container_extract_one(rp_container *container, rp_target *target);
 
 /** \} */
