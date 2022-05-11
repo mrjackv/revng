@@ -14,7 +14,8 @@ revng_add_analyses_library_internal(
   ControlFlow/NodeSizeCalculation.cpp
   ControlFlow/SVG.cpp
   Internal/Dump.cpp
-  Internal/Verify.cpp)
+  Internal/Verify.cpp
+  Support/SugiyamaStyleGraphLayout.cpp)
 
 set(DISASSEMBLER_ARCHITECTURE_SUPPORT "")
 foreach(CURRENT_ARCHITECTURE AArch64 AMDGPU ARM Mips SystemZ X86)
