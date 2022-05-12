@@ -16,6 +16,7 @@ revng_add_analyses_library_internal(
   Internal/Dump.cpp
   Internal/Verify.cpp
   Support/SugiyamaStyleGraphLayout/GraphPreparation.cpp
+  Support/SugiyamaStyleGraphLayout/HorizontalPositions.cpp
   Support/SugiyamaStyleGraphLayout/LayoutConversion.cpp
   Support/SugiyamaStyleGraphLayout/LinearSegmentSelection.cpp
   Support/SugiyamaStyleGraphLayout/NodeRanking.cpp
