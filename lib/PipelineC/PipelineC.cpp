@@ -610,3 +610,17 @@ const char *rp_analysis_get_argument_name(rp_analysis *analysis, int index) {
 
   return copyString(Name);
 }
+
+int rp_analysis_get_argument_acceptable_kinds_count(rp_analysis *analysis,
+                                                    int argument_index) {
+  return analysis->second->getAcceptedKinds(argument_index).size();
+}
+
+const rp_kind *rp_analysis_get_argument_acceptable_kind(rp_analysis *analysis,
+                                                        int argument_index,
+                                                        int kind_index) {
+  const auto &Accepted = analysis->second->getAcceptedKinds(argument_index);
+  if (static_cast<size_t>(kind_index) >= Accepted.size())
+    return nullptr;
+  return Accepted[kind_index];
+}

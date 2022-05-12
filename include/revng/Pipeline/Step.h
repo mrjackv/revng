@@ -20,6 +20,7 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include "revng/ADT/STLExtras.h"
+#include "revng/Pipeline/Analysis.h"
 #include "revng/Pipeline/ContainerSet.h"
 #include "revng/Pipeline/Context.h"
 #include "revng/Pipeline/Contract.h"
@@ -34,7 +35,7 @@ namespace pipeline {
 /// will contain the element used for perform the computations.
 class Step {
 public:
-  using AnalysisMapType = llvm::StringMap<PipeWrapper>;
+  using AnalysisMapType = llvm::StringMap<AnalysisWrapper>;
   using AnalysisIterator = AnalysisMapType::iterator;
   using AnalysisValueType = AnalysisMapType::value_type;
   using ConstAnalysisIterator = AnalysisMapType::const_iterator;
@@ -79,15 +80,15 @@ public:
     PreviousStep(&PreviousStep) {}
 
 public:
-  void addAnalysis(llvm::StringRef Name, PipeWrapper Analysis) {
+  void addAnalysis(llvm::StringRef Name, AnalysisWrapper Analysis) {
     AnalysisMap.try_emplace(Name, std::move(Analysis));
   }
 
-  const PipeWrapper &getAnalysis(llvm::StringRef Name) const {
+  const AnalysisWrapper &getAnalysis(llvm::StringRef Name) const {
     return AnalysisMap.find(Name)->second;
   }
 
-  PipeWrapper &getAnalysis(llvm::StringRef Name) {
+  AnalysisWrapper &getAnalysis(llvm::StringRef Name) {
     return AnalysisMap.find(Name)->second;
   }
 
@@ -219,7 +220,7 @@ private:
                             ContainerToTargetsMap &ToLoad) const;
 
   void explainExecutedPipe(const Context &Ctx,
-                           const PipeWrapper &Wrapper,
+                           const InvokableWrapperBase &Wrapper,
                            llvm::raw_ostream *OS,
                            size_t Indentation = 0) const;
   void explainStartStep(const ContainerToTargetsMap &Wrapper,

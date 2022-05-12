@@ -75,8 +75,8 @@ public:
   template<typename... LLVMPasses>
   static PipeWrapper
   wrapLLVMPasses(std::string LLVMModuleName, LLVMPasses &&...P) {
-    return PipeWrapper(GenericLLVMPipe<ThisType>(std::move(P)...),
-                       { std::move(LLVMModuleName) });
+    return PipeWrapper::make(GenericLLVMPipe<ThisType>(std::move(P)...),
+                             { std::move(LLVMModuleName) });
   }
 
 public:

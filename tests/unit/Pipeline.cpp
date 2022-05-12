@@ -467,7 +467,9 @@ BOOST_AUTO_TEST_CASE(StepCanCloneAndRun) {
   ContainerSet Containers;
   auto Factory = getMapFactoryContainer();
   Containers.add(CName, Factory, Factory("dont_care"));
-  Step Step("first_step", move(Containers), bindPipe<TestPipe>(CName, CName));
+  Step Step("first_step",
+            move(Containers),
+            PipeWrapper::bind<TestPipe>(CName, CName));
 
   ContainerToTargetsMap Targets;
   Targets[CName].emplace_back(RootKind2);
@@ -490,7 +492,7 @@ BOOST_AUTO_TEST_CASE(PipelineCanBeManuallyExectued) {
   Runner Pip(Ctx);
   Pip.addStep(Step("first_step",
                    Registry.createEmpty(),
-                   bindPipe<TestPipe>(CName, CName)));
+                   PipeWrapper::bind<TestPipe>(CName, CName)));
 
   auto Containers = Registry.createEmpty();
   auto &C1 = Containers.getOrCreate<MapContainer>(CName);
@@ -525,7 +527,7 @@ BOOST_AUTO_TEST_CASE(SingleElementPipelineCanBeRunned) {
   Pip.addStep(Step("End",
                    move(Containers2),
                    Pip["first_step"],
-                   bindPipe<TestPipe>(CName, CName)));
+                   PipeWrapper::bind<TestPipe>(CName, CName)));
 
   ContainerToTargetsMap Targets;
   Targets[CName].emplace_back(Target(RootKind2));
@@ -586,7 +588,9 @@ BOOST_AUTO_TEST_CASE(SingleElementPipelineBackwardFinedGrained) {
 
   const std::string Name = "first_step";
   Pipeline.emplaceStep("", Name);
-  Pipeline.emplaceStep(Name, "End", bindPipe<FineGranerPipe>(CName, CName));
+  Pipeline.emplaceStep(Name,
+                       "End",
+                       PipeWrapper::bind<FineGranerPipe>(CName, CName));
 
   auto &Container(Pipeline[Name].containers().getOrCreate<MapContainer>(CName));
   Container.get(Target(RootKind)) = 1;
@@ -627,7 +631,9 @@ BOOST_AUTO_TEST_CASE(SingleElementPipelineFailure) {
   Pipeline.addDefaultConstructibleFactory<MapContainer>(CName);
 
   const std::string Name = "first_step";
-  Pipeline.emplaceStep("", Name, bindPipe<FineGranerPipe>(CName, CName));
+  Pipeline.emplaceStep("",
+                       Name,
+                       PipeWrapper::bind<FineGranerPipe>(CName, CName));
   Pipeline.emplaceStep(Name, "End");
 
   auto &Container(Pipeline[Name].containers().getOrCreate<MapContainer>(CName));
@@ -769,7 +775,9 @@ BOOST_AUTO_TEST_CASE(SingleElementPipelineForwardFinedGrained) {
 
   const std::string Name = "first_step";
   Pipeline.emplaceStep("", Name);
-  Pipeline.emplaceStep(Name, "End", bindPipe<FineGranerPipe>(CName, CName));
+  Pipeline.emplaceStep(Name,
+                       "End",
+                       PipeWrapper::bind<FineGranerPipe>(CName, CName));
 
   auto &C1 = Pipeline[Name].containers().getOrCreate<MapContainer>(CName);
   C1.get(Target({}, RootKind)) = 1;
@@ -798,7 +806,9 @@ BOOST_AUTO_TEST_CASE(SingleElementPipelineInvalidation) {
 
   const std::string Name = "first_step";
   Pipeline.emplaceStep("", Name);
-  Pipeline.emplaceStep(Name, "End", bindPipe<FineGranerPipe>(CName, CName));
+  Pipeline.emplaceStep(Name,
+                       "End",
+                       PipeWrapper::bind<FineGranerPipe>(CName, CName));
 
   auto &C1 = Pipeline[Name].containers().getOrCreate<MapContainer>(CName);
   C1.get(Target({}, RootKind)) = 1;
@@ -824,7 +834,9 @@ BOOST_AUTO_TEST_CASE(SingleElementPipelineWithRemove) {
   Pipeline.addDefaultConstructibleFactory<MapContainer>(CName);
 
   const std::string Name = "first_step";
-  Pipeline.emplaceStep("", Name, bindPipe<FineGranerPipe>(CName, CName));
+  Pipeline.emplaceStep("",
+                       Name,
+                       PipeWrapper::bind<FineGranerPipe>(CName, CName));
   Pipeline.emplaceStep(Name, "End");
 
   auto &C1 = Pipeline[Name].containers().getOrCreate<MapContainer>(CName);
@@ -974,7 +986,9 @@ BOOST_AUTO_TEST_CASE(SingleElementPipelineStoreToDisk) {
   Pipeline.addDefaultConstructibleFactory<MapContainer>(CName);
 
   const std::string Name = "first_step";
-  Pipeline.emplaceStep("", Name, bindPipe<FineGranerPipe>(CName, CName));
+  Pipeline.emplaceStep("",
+                       Name,
+                       PipeWrapper::bind<FineGranerPipe>(CName, CName));
   Pipeline.emplaceStep(Name, "End");
 
   auto &C1 = Pipeline[Name].containers().getOrCreate<MapContainer>(CName);
@@ -1250,8 +1264,10 @@ BOOST_AUTO_TEST_CASE(MultiStepInvalidationTest) {
   Pipeline.emplaceStep("", Name);
   Pipeline.emplaceStep(Name,
                        SecondName,
-                       bindPipe<FineGranerPipe>(CName, CName));
-  Pipeline.emplaceStep(SecondName, "End", bindPipe<CopyPipe>(CName, CName2));
+                       PipeWrapper::bind<FineGranerPipe>(CName, CName));
+  Pipeline.emplaceStep(SecondName,
+                       "End",
+                       PipeWrapper::bind<CopyPipe>(CName, CName2));
 
   auto &C1 = Pipeline[Name].containers().getOrCreate<MapContainer>(CName);
   auto &C1End = Pipeline["End"].containers().getOrCreate<MapContainer>(CName);

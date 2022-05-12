@@ -54,4 +54,5 @@ target_link_libraries(
   revngPipeline
   revngSupport
   revngYield
+  revngEarlyFunctionAnalysis
   ${LLVM_LIBRARIES})

@@ -327,6 +327,21 @@ int rp_analysis_get_arguments_count(rp_analysis *analysis);
  */
 const char *rp_analysis_get_argument_name(rp_analysis *analysis, int index);
 
+/**
+ * \return the quantity of kinds that can be accepted by a analysis
+ */
+int rp_analysis_get_argument_acceptable_kinds_count(rp_analysis *analysis,
+                                                    int argument_index);
+
+/**
+ * \return the pointer to a acceptable kind for the container with index
+ * argument_index within a analysis, nullptr if kind_index is >= than
+ * rp_analysis_argument_acceptable_kinds_count(analysis, argument_index)
+ */
+const rp_kind *rp_analysis_get_argument_acceptable_kind(rp_analysis *analysis,
+                                                        int argument_index,
+                                                        int kind_index);
+
 /** \} */
 
 /**
