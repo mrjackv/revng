@@ -15,6 +15,7 @@ revng_add_analyses_library_internal(
   ControlFlow/SVG.cpp
   Internal/Dump.cpp
   Internal/Verify.cpp
+  Support/SugiyamaStyleGraphLayout/EdgeRouting.cpp
   Support/SugiyamaStyleGraphLayout/GraphPreparation.cpp
   Support/SugiyamaStyleGraphLayout/HorizontalPositions.cpp
   Support/SugiyamaStyleGraphLayout/LaneDistribution.cpp
