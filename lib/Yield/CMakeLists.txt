@@ -17,6 +17,7 @@ revng_add_analyses_library_internal(
   Internal/Verify.cpp
   Support/SugiyamaStyleGraphLayout/GraphPreparation.cpp
   Support/SugiyamaStyleGraphLayout/NodeRanking.cpp
+  Support/SugiyamaStyleGraphLayout/PermutationSelection.cpp
   Support/SugiyamaStyleGraphLayout.cpp)
 
 set(DISASSEMBLER_ARCHITECTURE_SUPPORT "")
