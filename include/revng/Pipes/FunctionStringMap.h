@@ -6,6 +6,8 @@
 
 #include <map>
 
+#include "llvm/ADT/StringRef.h"
+
 #include "revng/Pipeline/Container.h"
 #include "revng/Pipeline/ContainerSet.h"
 #include "revng/Pipeline/Loader.h"
@@ -23,6 +25,7 @@ public:
   struct String {
     std::string TheString;
     operator std::string() const { return TheString; }
+    operator llvm::StringRef() const { return TheString; }
   };
 
 public:
