@@ -104,7 +104,7 @@ async def resolve_targets(_, info, *, pathspec):
 @mutation.field("upload_b64")
 async def resolve_upload_b64(_, info, *, input: str, container: str):  # noqa: A002
     manager: Manager = info.context["manager"]
-    manager.set_input(container, b64decode(input))
+    await run_in_executor(lambda: manager.set_input(container, b64decode(input)))
     logging.info(f"Saved file for container {container}")
     return True
 
@@ -112,7 +112,8 @@ async def resolve_upload_b64(_, info, *, input: str, container: str):  # noqa: A
 @mutation.field("upload_file")
 async def resolve_upload_file(_, info, *, file: UploadFile, container: str):
     manager: Manager = info.context["manager"]
-    manager.set_input(container, await file.read())
+    contents = await file.read()
+    await run_in_executor(lambda: manager.set_input(container, contents))
     logging.info(f"Saved file for container {container}")
     return True
 
