@@ -3,6 +3,7 @@
 #
 
 import argparse
+import contextlib
 import dataclasses
 import os
 import sys
@@ -82,7 +83,12 @@ class CommandsRegistry:
         self.register_command(ExternalCommand(self._parse_command(command), path))
 
     def run(self, arguments, options: Options):
-        (args, rest) = self._create_parser().parse_known_args(arguments)
+        parser = self._create_parser()
+        with contextlib.suppress(ImportError):
+            import argcomplete
+
+            argcomplete.autocomplete(parser)
+        (args, rest) = parser.parse_known_args(arguments)
         command = []
         for name, value in args.__dict__.items():
             if name.startswith(COMMAND_ARG_PREFIX):
