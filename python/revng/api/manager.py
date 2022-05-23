@@ -354,11 +354,20 @@ class Manager:
             make_c_string(analysis.name),
             first_key._container,
         )
-        return self.parse_diff_map(result) if result != ffi.NULL else None
+
+        if result != ffi.NULL:
+            self.store_containers()
+            return self.parse_diff_map(result)
+        else:
+            return None
 
     def run_all_analyses(self) -> Optional[Dict[str, str]]:
         result = _api.rp_manager_run_all_analyses(self._manager)
-        return self.parse_diff_map(result) if result != ffi.NULL else None
+        if result != ffi.NULL:
+            self.store_containers()
+            return self.parse_diff_map(result)
+        else:
+            return None
 
     def parse_diff_map(self, diff_map) -> Dict[str, str]:
         result = {}
@@ -420,6 +429,8 @@ class Manager:
             raise RevngException(
                 f"Failed loading user provided input for container {container_name}"
             )
+
+        self.store_containers()
 
         return str(container_path.resolve())
 
