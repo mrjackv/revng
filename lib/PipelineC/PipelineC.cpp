@@ -431,9 +431,11 @@ char *rp_manager_create_container_path(rp_manager *manager,
   if (manager->executionDirectory().empty())
     return nullptr;
 
-  auto Path = (manager->executionDirectory() + "/" + step_name + "/"
-               + container_name)
-                .str();
+  llvm::SmallString<128> Path;
+  llvm::sys::path::append(Path,
+                          manager->executionDirectory(),
+                          step_name,
+                          container_name);
   return copyString(Path);
 }
 
