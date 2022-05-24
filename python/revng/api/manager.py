@@ -50,8 +50,20 @@ class Manager:
 
         assert self._manager, "Failed to instantiate manager"
 
-    def store_containers(self):
-        return _api.rp_manager_store_containers(self._manager)
+    def save(self, destination_directory: Optional[Union[Path, str]] = None):
+        if destination_directory is None:
+            _dir_path = ffi.NULL
+        else:
+            dir_path = Path(destination_directory)
+            if not dir_path.is_dir():
+                dir_path.mkdir()
+            _dir_path = make_c_string(str(dir_path.resolve()))
+        return _api.rp_manager_save(self._manager, _dir_path)
+
+    def save_context(self, destination_directory: Union[Path, str]):
+        dest_dir = Path(destination_directory).resolve()
+        _dest_dir = make_c_string(str(dest_dir))
+        return _api.rp_manager_save_context(self._manager, _dest_dir)
 
     # Kind-related Functions
 
@@ -356,7 +368,7 @@ class Manager:
         )
 
         if result != ffi.NULL:
-            self.store_containers()
+            self.save()
             return self.parse_diff_map(result)
         else:
             return None
@@ -364,7 +376,7 @@ class Manager:
     def run_all_analyses(self) -> Optional[Dict[str, str]]:
         result = _api.rp_manager_run_all_analyses(self._manager)
         if result != ffi.NULL:
-            self.store_containers()
+            self.save()
             return self.parse_diff_map(result)
         else:
             return None
@@ -430,7 +442,7 @@ class Manager:
                 f"Failed loading user provided input for container {container_name}"
             )
 
-        self.store_containers()
+        self.save()
 
         return str(container_path.resolve())
 

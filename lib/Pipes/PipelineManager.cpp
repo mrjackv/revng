@@ -248,9 +248,13 @@ void PipelineManager::writeAllPossibleTargets(llvm::raw_ostream &OS) const {
   }
 }
 
-llvm::Error PipelineManager::storeToDisk() {
+llvm::Error PipelineManager::storeToDisk(llvm::StringRef DirPath) {
+  if (!DirPath.empty())
+    return Runner->storeToDisk(DirPath);
+
   if (ExecutionDirectory.empty())
     return llvm::Error::success();
+
   return Runner->storeToDisk(ExecutionDirectory);
 }
 

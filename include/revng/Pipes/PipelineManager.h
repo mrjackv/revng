@@ -89,8 +89,8 @@ public:
   llvm::Error store(llvm::ArrayRef<std::string> StoresOverrides);
 
   /// Triggers the full serialization of every step and every container to the
-  /// ExecutionDirectory.
-  llvm::Error storeToDisk();
+  /// the specified DirPath or the Execution directory if omitted.
+  llvm::Error storeToDisk(llvm::StringRef DirPath = llvm::StringRef());
 
   const pipeline::Context &context() const { return *PipelineContext; }
 
