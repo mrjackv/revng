@@ -22,6 +22,7 @@ from revng.api.manager import Manager
 from revng.api.rank import Rank
 from revng.api.step import Step
 
+from .manager_proxy import ManagerProxy
 from .util import clean_step_list, str_to_snake_case
 
 executor = ThreadPoolExecutor(1)
@@ -343,7 +344,7 @@ class BindableGen:
 schema_gen = SchemaGen()
 
 
-class SchemafulManager(Manager):
+class SchemafulManager(ManagerProxy):
     _schema: Optional[GraphQLSchema]
 
     def __init__(self, *args, **kwargs):

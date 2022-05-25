@@ -178,6 +178,7 @@ endforeach()
 set(REVNG_DAEMON_MODULE_FILES
     revng/daemon/__init__.py
     revng/daemon/demo_webpage.py
+    revng/daemon/manager_proxy.py
     revng/daemon/schema.py
     revng/daemon/schema.graphql.tpl
     revng/daemon/util.py
