@@ -268,10 +268,7 @@ class Manager:
             raise RevngException(f"Step {step_name} does not use container {container_name}")
 
         targets_list = self.get_targets_list(container)
-        if targets_list is None:
-            raise RevngException("Invalid container name (cannot get targets list)")
-
-        return list(targets_list.targets())
+        return list(targets_list.targets()) if targets_list is not None else []
 
     def get_targets_from_step(self, step_name: str) -> Dict[str, List[Target]]:
         step = self.get_step(step_name)
