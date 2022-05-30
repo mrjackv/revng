@@ -55,6 +55,12 @@ type Step {
     parent: String
     containers: [Container!]!
     analyses: [Analysis!]!
+    artifacts: ArtifactInfo
+}
+
+type ArtifactInfo {
+    kind: Kind!
+    container: Container!
 }
 
 type Analysis {
