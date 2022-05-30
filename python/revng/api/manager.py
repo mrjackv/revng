@@ -106,7 +106,13 @@ class Manager:
         _product = _api.rp_manager_produce_targets(
             self._manager, len(_targets), _targets, _step, _container
         )
-        return make_python_string(_product)
+
+        if isinstance(target, Target):
+            return target.extract()
+        elif len(target) == 1:
+            return target[0].extract()
+        else:
+            return make_python_string(_product)
 
     def produce_target(
         self,
