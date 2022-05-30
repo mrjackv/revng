@@ -97,7 +97,7 @@
             container: container.name,
             kind: target.kind,
             exact: true,
-            path_components: target.path_components,
+            path_components: target.pathComponents,
           }
 
           let ready = target.ready ? "Yes" : "No";
@@ -125,7 +125,7 @@
     });
     let input_query = `
       mutation {
-        upload_b64(input: "${btoa(file_reader.result)}", container: "input")
+        uploadB64(input: "${btoa(file_reader.result)}", container: "input")
       }
     `;
 
@@ -134,7 +134,7 @@
     try {
       let analysis_response = await gql(`
         mutation {
-          run_all_analyses
+          runAllAnalyses
         }
       `);
     } catch (err) {

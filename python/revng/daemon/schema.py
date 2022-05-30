@@ -9,7 +9,7 @@ from base64 import b64decode
 from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
 from pathlib import Path
-from typing import Awaitable, Callable, Dict, List, TypeVar
+from typing import Awaitable, Callable, Dict, List, Optional, TypeVar
 
 from starlette.datastructures import UploadFile
 
@@ -23,7 +23,7 @@ from revng.api.rank import Rank
 from revng.api.step import Step
 
 from .manager_proxy import ManagerProxy
-from .util import clean_step_list, str_to_snake_case
+from .util import clean_step_list, pascal_to_camel, str_to_snake_case, target_dict_to_graphql
 
 executor = ThreadPoolExecutor(1)
 
@@ -49,20 +49,24 @@ async def resolve_root(_, info):
 
 
 @query.field("produce")
-async def resolve_produce(obj, info, *, step, container, target_list, only_if_ready=False):
+async def resolve_produce(
+    obj, info, *, step: str, container: str, targetList: str, onlyIfReady=False  # noqa: N803
+):
     manager: Manager = info.context["manager"]
-    targets = target_list.split(",")
+    targets = targetList.split(",")
     return await run_in_executor(
-        lambda: manager.produce_target(step, targets, container, only_if_ready)
+        lambda: manager.produce_target(step, targets, container, onlyIfReady)
     )
 
 
-@query.field("produce_artifacts")
-async def resolve_produce_artifacts(obj, info, *, step, paths=None, only_if_ready=False):
+@query.field("produceArtifacts")
+async def resolve_produce_artifacts(
+    obj, info, *, step: str, paths: Optional[str] = None, onlyIfReady=False  # noqa: N803
+):
     manager: Manager = info.context["manager"]
     target_paths = paths.split(",") if paths is not None else None
     return await run_in_executor(
-        lambda: manager.produce_target(step, target_paths, only_if_ready=only_if_ready)
+        lambda: manager.produce_target(step, target_paths, only_if_ready=onlyIfReady)
     )
 
 
@@ -78,7 +82,7 @@ async def resolve_step(_, info, *, name):
 
 
 @query.field("container")
-async def resolve_container(_, info, *, name, step):
+async def resolve_container(_, info, *, name: str, step):
     manager: Manager = info.context["manager"]
     container_id = manager.get_container_with_name(name)
     step = await run_in_executor(lambda: manager.get_step(step))
@@ -95,14 +99,21 @@ async def resolve_container(_, info, *, name, step):
 
 
 @query.field("targets")
-async def resolve_targets(_, info, *, pathspec):
+async def resolve_targets(_, info, *, pathspec: str):
     manager: Manager = info.context["manager"]
     targets = await run_in_executor(lambda: manager.get_all_targets())
     result = [
         {
             "name": k,
             "containers": [
-                {"name": k2, "targets": [t.as_dict() for t in v2 if t.joined_path() == pathspec]}
+                {
+                    "name": k2,
+                    "targets": [
+                        target_dict_to_graphql(t.as_dict())
+                        for t in v2
+                        if t.joined_path() == pathspec
+                    ],
+                }
                 for k2, v2 in v.items()
             ],
         }
@@ -112,7 +123,7 @@ async def resolve_targets(_, info, *, pathspec):
     return result
 
 
-@mutation.field("upload_b64")
+@mutation.field("uploadB64")
 async def resolve_upload_b64(_, info, *, input: str, container: str):  # noqa: A002
     manager: Manager = info.context["manager"]
     await run_in_executor(lambda: manager.set_input(container, b64decode(input)))
@@ -120,7 +131,7 @@ async def resolve_upload_b64(_, info, *, input: str, container: str):  # noqa: A
     return True
 
 
-@mutation.field("upload_file")
+@mutation.field("uploadFile")
 async def resolve_upload_file(_, info, *, file: UploadFile, container: str):
     manager: Manager = info.context["manager"]
     contents = await file.read()
@@ -129,7 +140,7 @@ async def resolve_upload_file(_, info, *, file: UploadFile, container: str):
     return True
 
 
-@mutation.field("run_analysis")
+@mutation.field("runAnalysis")
 async def resolve_run_analysis(_, info, *, step: str, analysis: str, container: str, targets: str):
     manager: Manager = info.context["manager"]
     result = await run_in_executor(
@@ -138,7 +149,7 @@ async def resolve_run_analysis(_, info, *, step: str, analysis: str, container: 
     return json.dumps(result)
 
 
-@mutation.field("run_all_analyses")
+@mutation.field("runAllAnalyses")
 async def resolve_run_all_analyses(_, info):
     manager: Manager = info.context["manager"]
     result = await run_in_executor(manager.run_all_analyses)
@@ -213,7 +224,7 @@ async def resolve_container_targets(container_obj, info):
     targets = await run_in_executor(
         lambda: manager.get_targets(container_obj["_step"], container_obj["name"])
     )
-    return await run_in_executor(lambda: [t.as_dict() for t in targets])
+    return await run_in_executor(lambda: [target_dict_to_graphql(t.as_dict()) for t in targets])
 
 
 DEFAULT_BINDABLES = (query, mutation, info, step, container, upload_scalar, analysis_mutations)
@@ -226,7 +237,8 @@ class SchemaGen:
         local_folder = Path(__file__).parent.resolve()
         self.jenv = Environment(loader=FileSystemLoader(str(local_folder)))
         self.jenv.filters["rank_param"] = self._rank_to_arguments
-        self.jenv.filters["snake_case"] = str_to_snake_case
+        self.jenv.filters["pascal_to_camel"] = pascal_to_camel
+        self.jenv.filters["str_to_snake_case"] = str_to_snake_case
         self.jenv.filters["generate_analysis_parameters"] = self._generate_analysis_parameters
 
     def get_schema(self, manager: Manager) -> GraphQLSchema:
@@ -287,7 +299,7 @@ class BindableGen:
             bindables.append(rank_obj)
             for step in steps:
                 handle = self.gen_step_handle(step)
-                rank_obj.set_field(str_to_snake_case(step.name), handle)
+                rank_obj.set_field(pascal_to_camel(step.name), handle)
 
         return bindables
 
@@ -296,14 +308,12 @@ class BindableGen:
         for step in self.steps:
             if step.analyses_count() < 1:
                 continue
-            analysis_mutations.set_field(
-                str_to_snake_case(step.name), self.analysis_mutation_handle
-            )
+            analysis_mutations.set_field(pascal_to_camel(step.name), self.analysis_mutation_handle)
             step_analysis_obj = ObjectType(f"{step.name}Analyses")
             bindables.append(step_analysis_obj)
             for analysis in step.analyses():
                 handle = self.gen_step_analysis_handle(step, analysis)
-                step_analysis_obj.set_field(str_to_snake_case(analysis.name), handle)
+                step_analysis_obj.set_field(pascal_to_camel(analysis.name), handle)
         return bindables
 
     @staticmethod
@@ -326,12 +336,10 @@ class BindableGen:
 
     @staticmethod
     def gen_step_handle(step: Step):
-        async def rank_step_handle(obj, info, *, only_if_ready=False):
+        async def rank_step_handle(obj, info, *, onlyIfReady=False):  # noqa: N803
             manager: Manager = info.context["manager"]
             return await run_in_executor(
-                lambda: manager.produce_target(
-                    step.name, obj["_target"], only_if_ready=only_if_ready
-                )
+                lambda: manager.produce_target(step.name, obj["_target"], only_if_ready=onlyIfReady)
             )
 
         return rank_step_handle
