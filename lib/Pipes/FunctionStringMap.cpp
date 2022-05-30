@@ -49,7 +49,7 @@ FunctionStringMap::extractOne(llvm::raw_ostream &OS,
   auto It = Map.find(MetaAddress::fromString(MetaAddrStr));
   revng_check(It != Map.end());
 
-  OS << It->second;
+  OS << std::string(It->second);
 
   return llvm::Error::success();
 }
