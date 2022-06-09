@@ -1,0 +1,36 @@
+# This file is distributed under the MIT License. See LICENSE.md for details.
+{
+   Cond on ParseCommandLineOptions
+   Memcheck:Cond
+   ...
+   fun:_ZN4llvm2cl23ParseCommandLineOptionsEiPKPKcNS_9StringRefEPNS_11raw_ostreamES2_b
+   ...
+}
+{
+   Value8 on ParseCommandLineOptions
+   Memcheck:Value8
+   ...
+   fun:_ZN4llvm2cl23ParseCommandLineOptionsEiPKPKcNS_9StringRefEPNS_11raw_ostreamES2_b
+   ...
+}
+{
+   Addr1 on ParseCommandLineOptions
+   Memcheck:Addr1
+   ...
+   fun:_ZN4llvm2cl23ParseCommandLineOptionsEiPKPKcNS_9StringRefEPNS_11raw_ostreamES2_b
+   ...
+}
+{
+   Cond on ptc_translate
+   Memcheck:Cond
+   ...
+   fun:ptc_translate
+   ...
+}
+{
+   Value8 on ptc_translate
+   Memcheck:Value8
+   ...
+   fun:ptc_translate
+   ...
+}

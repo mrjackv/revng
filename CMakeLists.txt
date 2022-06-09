@@ -198,6 +198,8 @@ copy_to_build_and_install(
   share/revng/pipelines/translate.yml share/revng/pipelines/enforce-abi.yml
   share/revng/pipelines/yield-assembly.yml)
 
+copy_to_build_and_install(FILES share/revng share/revng/valgrind.supp)
+
 configure_file(runtime/early-linked.c
                "${CMAKE_BINARY_DIR}/share/revng/early-linked.c" COPYONLY)
 

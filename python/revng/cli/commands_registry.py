@@ -8,7 +8,7 @@ import os
 import sys
 from typing import Tuple
 
-from .support import Options, try_run
+from .support import Options, collect_files, try_run
 
 
 class Command:
@@ -111,7 +111,11 @@ class CommandsRegistry:
                 options.command_prefix += ["lldb", "--"]
 
             if args.valgrind:
-                options.command_prefix += ["valgrind"]
+                suppressions = collect_files(options.search_prefixes, ["share", "revng"], "*.supp")
+                options.command_prefix += [
+                    "valgrind",
+                    *(f"--suppressions={s}" for s in suppressions),
+                ]
 
             if args.callgrind:
                 options.command_prefix += ["valgrind", "--tool=callgrind"]
