@@ -114,7 +114,11 @@ _api = ApiWrapper(_raw_api, ffi)
 _api.rp_set_custom_abort_hook(pytraceback)
 
 
-def initialize(args: Iterable[str] = (), libraries: Optional[AnyPaths] = None):
+def initialize(
+    args: Iterable[str] = (),
+    libraries: Optional[AnyPaths] = None,
+    signals_to_preserve: Iterable[int] = (),
+):
     """Initialize library, must be called exactly once"""
 
     if libraries is None:
@@ -127,8 +131,16 @@ def initialize(args: Iterable[str] = (), libraries: Optional[AnyPaths] = None):
 
     _libraries = [ffi.new("char[]", str(s.resolve()).encode("utf-8")) for s in path_libraries]
     _args = [ffi.new("char[]", arg.encode("utf-8")) for arg in args]
+    _signals_to_preserve = [int(s) for s in signals_to_preserve]
 
-    success = _api.rp_initialize(len(_args), _args, len(_libraries), _libraries)
+    success = _api.rp_initialize(
+        len(_args),
+        _args,
+        len(_libraries),
+        _libraries,
+        len(_signals_to_preserve),
+        _signals_to_preserve,
+    )
     assert success, "Failed revng C API initialization"
 
 

@@ -4,6 +4,7 @@
 
 import logging
 import os
+import signal
 from pathlib import Path
 from typing import Optional
 
@@ -20,6 +21,7 @@ from ariadne.contrib.tracing.apollotracing import ApolloTracingExtension
 
 from revng.api import Manager
 from revng.api._capi import initialize as capi_initialize
+from revng.api._capi import shutdown as capi_shutdown
 
 from .demo_webpage import demo_page, production_demo_page
 from .manager import make_manager
@@ -58,7 +60,7 @@ async def status(request):
 
 def startup():
     global manager, startup_done
-    capi_initialize()
+    capi_initialize(signals_to_preserve=(signal.SIGINT, signal.SIGTERM))
     manager = make_manager(workdir)
     app.mount(
         "/graphql",
@@ -73,10 +75,13 @@ def startup():
 
 
 def shutdown():
+    global manager
     if manager is not None:
         store_result = manager.save()
         if not store_result:
             logging.warning("Failed to store manager's containers")
+        del manager
+    capi_shutdown()
 
 
 app = Starlette(

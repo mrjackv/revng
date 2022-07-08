@@ -2,6 +2,7 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
+#include <csignal>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -55,10 +56,29 @@ static bool loadLibraryPermanently(const char *LibraryPath) {
 
 static std::optional<revng::InitRevng> InitRevngInstance = std::nullopt;
 
+typedef void (*sighandler_t)(int);
+
 bool rp_initialize(int argc,
                    char *argv[],
                    int libraries_count,
-                   const char *libraries_path[]) {
+                   const char *libraries_path[],
+                   int signals_to_preserve_count,
+                   int signals_to_preserve[]) {
+  if (argc != 0)
+    revng_check(argv != nullptr);
+  if (libraries_count != 0)
+    revng_check(libraries_path != nullptr);
+
+  std::map<int, sighandler_t> Signals;
+  for (int I = 0; I < signals_to_preserve_count; I++) {
+    int SigNo = signals_to_preserve[I];
+    sighandler_t OldSignal = signal(SigNo, SIG_DFL);
+    if (OldSignal != SIG_ERR) {
+      Signals[SigNo] = OldSignal;
+      signal(SigNo, OldSignal);
+    }
+  }
+
   if (Initialized)
     return false;
 
@@ -73,6 +93,11 @@ bool rp_initialize(int argc,
   Initialized = true;
 
   Registry::runAllInitializationRoutines();
+
+  for (const auto &[SignalNo, Handler] : Signals) {
+    signal(SignalNo, Handler);
+  }
+
   return true;
 }
 
