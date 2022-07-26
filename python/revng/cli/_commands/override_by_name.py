@@ -2,7 +2,7 @@
 # This file is distributed under the MIT License. See LICENSE.md for details.
 #
 
-import sys
+import logging
 from shutil import copyfileobj
 from tempfile import NamedTemporaryFile
 
@@ -10,7 +10,6 @@ import yaml
 
 from revng.cli.commands_registry import Command, Options
 from revng.cli.revng import run_revng_command
-from revng.cli.support import log_error
 
 
 class ModelOverrideByName(Command):
@@ -30,12 +29,11 @@ class ModelOverrideByName(Command):
         )
 
     def log(self, message):
-        if self.verbose:
-            sys.stderr.write(message + "\n")
+        logging.debug(f"{message}\n")
 
     def run(self, options: Options):
         if options.remaining_args:
-            log_error("Unknown arguments passed in")
+            logging.error("Unknown arguments passed in")
             return 1
 
         args = options.parsed_args

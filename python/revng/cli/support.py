@@ -2,6 +2,7 @@
 # This file is distributed under the MIT License. See LICENSE.md for details.
 #
 
+import logging
 import os
 import shlex
 import signal
@@ -37,10 +38,6 @@ def shlex_join(split_command: Iterable[str]) -> str:
     return " ".join(shlex.quote(arg) for arg in split_command)
 
 
-def log_error(msg: str):
-    sys.stderr.write(msg + "\n")
-
-
 def wrap(args: List[str], command_prefix: List[str]):
     return command_prefix + args
 
@@ -57,7 +54,7 @@ def try_run(
 
     if options.verbose:
         program_path = relative(command[0])
-        sys.stderr.write("{}\n\n".format(" \\\n  ".join([program_path] + command[1:])))
+        logging.debug("{}\n\n".format(" \\\n  ".join([program_path] + command[1:])))
 
     if options.dry_run:
         return 0
@@ -82,7 +79,7 @@ def try_run(
 def run(command, options: Options, environment: Optional[Dict[str, str]] = None, do_exec=False):
     result = try_run(command, options, environment, do_exec)
     if result != 0:
-        log_error(f"The following command exited with {result}:\n{shlex_join(command)}")
+        logging.error(f"The following command exited with {result}:\n{shlex_join(command)}\n")
         sys.exit(result)
 
 
@@ -90,12 +87,12 @@ def get_command(command: str, search_prefixes: Iterable[str]) -> str:
     if command.startswith("revng-"):
         for executable in collect_files(search_prefixes, ["libexec", "revng"], command):
             return executable
-        log_error(f'Couldn\'t find "{command}"')
+        logging.error(f'Couldn\'t find "{command}"\n')
         assert False
 
     path = which(command)
     if not path:
-        log_error(f'Couldn\'t find "{command}".')
+        logging.error(f'Couldn\'t find "{command}"\n')
         assert False
     return os.path.abspath(path)
 

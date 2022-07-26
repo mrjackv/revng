@@ -2,6 +2,7 @@
 # This file is distributed under the MIT License. See LICENSE.md for details.
 #
 
+import logging
 import re
 import sys
 from contextlib import suppress
@@ -10,10 +11,6 @@ from xml.dom import Node
 from xml.dom.minidom import Document, parseString
 
 import yaml
-
-
-def log(msg: str):
-    sys.stderr.write(f"{msg}\n")
 
 
 def yaml_load(content: str) -> Dict[str, Any]:
@@ -49,7 +46,7 @@ def handle_file(
 ) -> T:
     if is_ptml(raw):
         if len(filters) > 0:
-            log("Cannot extract/filter a plain ptml file")
+            logging.error("Cannot extract/filter a plain ptml file")
             sys.exit(1)
 
         return func_one(raw)

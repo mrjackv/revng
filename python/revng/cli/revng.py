@@ -2,6 +2,7 @@
 # This file is distributed under the MIT License. See LICENSE.md for details.
 #
 
+import logging
 import os
 import sys
 from importlib import import_module
@@ -40,7 +41,8 @@ def run_revng_command(arguments, options: Options):
                 commands_registry.register_command(maybe_command())  # type: ignore
 
     if options.verbose:
-        sys.stderr.write("{}\n\n".format(" \\\n  ".join([sys.argv[0]] + arguments)))
+        logging.getLogger().setLevel(logging.DEBUG)
+        logging.debug("{}\n\n".format(" \\\n  ".join((sys.argv[0], *arguments))))
 
     if options.dry_run:
         return 0
@@ -65,4 +67,5 @@ def run_revng_command(arguments, options: Options):
 
 
 def main():
+    logging.basicConfig(level=logging.WARN, format="%(message)s", stream=sys.stderr)
     return run_revng_command(sys.argv[1:], Options(None, [], [], False, False, False))

@@ -3,6 +3,7 @@
 #
 
 import argparse
+import logging
 import sys
 from typing import Dict
 
@@ -10,7 +11,6 @@ from revng.cli.commands_registry import Command, Options
 
 from .common import (
     handle_file,
-    log,
     normalize_filter_extract,
     strip_ptml,
     suppress_brokenpipe,
@@ -25,7 +25,7 @@ def strip_ptml_many(content: Dict[str, str]) -> str:
 
 def cmd_strip(args):
     if args.inplace and args.input == sys.stdin:
-        log("Cannot strip inplace while reading from stdin")
+        logging.error("Cannot strip inplace while reading from stdin")
         return 1
 
     filters = normalize_filter_extract(args.filter, args.extract)
