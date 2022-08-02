@@ -75,18 +75,16 @@ def b64e(string: str) -> str:
 
 
 def project_workdir() -> Path:
-    data_dir = os.getenv("REVNG_DATA_DIR")
-    project_id = os.getenv("REVNG_PROJECT_ID")
+    data_dir = os.getenv("REVNG_DATA_DIR", "")
+    project_id = os.getenv("REVNG_PROJECT_ID", "")
 
-    if data_dir is None and project_id is None:
+    if data_dir == "" and project_id == "":
         workdir = Path(mkdtemp())
-    elif data_dir is not None and project_id is None:
+    elif data_dir != "" and project_id == "":
         workdir = Path(data_dir)
-    elif project_id is not None:
-        if data_dir is not None:
-            workdir = Path(data_dir) / b64e(project_id)
-        else:
-            workdir = xdg_data_home() / "revng" / b64e(project_id)
+    else:
+        real_data_dir = Path(data_dir) if data_dir != "" else xdg_data_home() / "revng"
+        workdir = real_data_dir / b64e(project_id)
 
     workdir.mkdir(parents=True, exist_ok=True)
     return workdir
