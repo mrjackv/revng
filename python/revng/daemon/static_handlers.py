@@ -158,11 +158,12 @@ async def resolve_upload_file(_, info, *, file: UploadFile, container: str):
 
 
 @mutation.field("runAnalysis")
-async def resolve_run_analysis(_, info, *, step: str, analysis: str, container: str, targets: str):
+async def resolve_run_analysis(
+    _, info, *, step: str, analysis: str, containerToTargets: str | None = None  # noqa: N803
+):
     manager: Manager = info.context["manager"]
-    result = await run_in_executor(
-        lambda: manager.run_analysis(step, analysis, {container: targets.split(",")})
-    )
+    target_map = json.loads(containerToTargets) if containerToTargets is not None else {}
+    result = await run_in_executor(lambda: manager.run_analysis(step, analysis, target_map))
     await invalidation_queue.send(str(result.invalidations))
     return json.dumps(result.result)
 

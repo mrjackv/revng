@@ -281,11 +281,9 @@ const char * /*owning*/ rp_manager_produce_targets(rp_manager *manager,
  */
 rp_diff_map * /*owning*/
 rp_manager_run_analysis(rp_manager *manager,
-                        uint64_t targets_count,
-                        rp_target *targets[],
                         const char *step_name,
                         const char *analysis_name,
-                        rp_container *container,
+                        rp_container_targets_map *target_map,
                         rp_invalidations *invalidations,
                         const rp_string_map *options);
 
@@ -763,5 +761,30 @@ void rp_invalidations_destroy(rp_invalidations *invalidations);
  */
 const char * /* owning */
 rp_invalidations_serialize(const rp_invalidations *invalidations);
+
+/** \} */
+
+/**
+ * \defgroup rp_container_targets_map methods
+ * \{
+ */
+
+/**
+ * Create a new rp_container_targets_map object
+ * \return owning pointer to the newly created object
+ */
+rp_container_targets_map * /*owning*/ rp_container_targets_map_create();
+
+/**
+ * Free a rp_container_targets_map
+ */
+void rp_container_targets_map_destroy(rp_container_targets_map *map);
+
+/**
+ * Add the specified Target to the Container in the map
+ */
+void rp_container_targets_map_add(rp_container_targets_map *map,
+                                  const rp_container *container,
+                                  const rp_target *target);
 
 /** \} */

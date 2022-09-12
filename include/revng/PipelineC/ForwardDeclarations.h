@@ -21,3 +21,4 @@ typedef const pipeline::DiffMap rp_diff_map;
 typedef ErrorList rp_error_list;
 typedef llvm::StringMap<std::string> rp_string_map;
 typedef pipeline::InvalidationMap rp_invalidations;
+typedef pipeline::ContainerToTargetsMap rp_container_targets_map;
