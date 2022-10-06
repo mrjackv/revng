@@ -54,7 +54,7 @@ class DaemonSelfTestCommand(Command):
             temp_folder = TemporaryDirectory()
             self.url = f"unix:{temp_folder.name}/daemon.sock"
             self.process = Popen(
-                ["revng", "daemon", "-b", self.url],
+                ["revng", "daemon", "--uvicorn-args", "--timeout-keep-alive 600", "-b", self.url],
                 env={k: v for k, v in os.environ.items() if k not in self.FILTER_ENV},
                 stdout=PIPE,
                 stderr=STDOUT,
@@ -102,7 +102,8 @@ class DaemonSelfTestCommand(Command):
 
         connector, address = await self.get_connection()
         transport = AIOHTTPTransport(
-            f"http://{address}/graphql/", client_session_args={"connector": connector, "timeout": ClientTimeout()}
+            f"http://{address}/graphql/",
+            client_session_args={"connector": connector, "timeout": ClientTimeout()},
         )
         async with Client(
             transport=transport, fetch_schema_from_transport=True, execute_timeout=None
