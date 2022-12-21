@@ -313,6 +313,28 @@ Loader::load(llvm::ArrayRef<PipelineDeclaration> Pipelines) const {
         .addAnalysis(Analysis.Name, std::move(*MaybeAnalysis));
     }
 
+  for (const auto &Declaration : Pipelines)
+    for (const auto &List : Declaration.AnalysesLists) {
+      llvm::SmallVector<AnalysisReference, 2> Analyses;
+      for (auto &AnalysisName : List.UsedAnalysesNames) {
+        if (not ToReturn.containsAnalysis(AnalysisName)) {
+          return llvm::createStringError(llvm::inconvertibleErrorCode(),
+                                         "no known analysis " + AnalysisName
+                                           + " used in analysis list "
+                                           + List.Name);
+        }
+
+        for (const auto &Step : ToReturn) {
+          if (Step.hasAnalysis(AnalysisName)) {
+            Analyses.emplace_back(Step.getName().str(), AnalysisName);
+            break;
+          }
+        }
+      }
+
+      ToReturn.addAnalysisList(List.Name, Analyses);
+    }
+
   return ToReturn;
 }
 
