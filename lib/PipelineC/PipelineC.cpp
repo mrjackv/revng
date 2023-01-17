@@ -340,14 +340,15 @@ rp_kind *rp_kind_get_parent(rp_kind *kind) {
   return kind->parent();
 }
 
-rp_diff_map *rp_manager_run_analysis(rp_manager *manager,
-                                     uint64_t targets_count,
-                                     rp_target *targets[],
-                                     const char *step_name,
-                                     const char *analysis_name,
-                                     rp_container *container,
-                                     rp_invalidations *invalidations,
-                                     const rp_string_map *options) {
+rp_diff_map * /*owning*/
+rp_manager_run_analysis(rp_manager *manager,
+                        uint64_t targets_count,
+                        rp_target *targets[],
+                        const char *step_name,
+                        const char *analysis_name,
+                        rp_container *container,
+                        rp_invalidations *invalidations,
+                        const rp_string_map *options) {
   revng_check(manager != nullptr);
   revng_check(targets_count != 0);
   revng_check(targets != nullptr);
@@ -818,10 +819,12 @@ rp_container_extract_one(rp_container *container, rp_target *target) {
 }
 
 const char *rp_analysis_get_name(rp_analysis *analysis) {
+  revng_check(analysis != nullptr);
   return analysis->second->getUserBoundName().c_str();
 }
 
 int rp_analysis_get_arguments_count(rp_analysis *analysis) {
+  revng_check(analysis != nullptr);
   return analysis->second->getRunningContainersNames().size();
 }
 
@@ -847,33 +850,41 @@ const rp_kind *rp_analysis_get_argument_acceptable_kind(rp_analysis *analysis,
 }
 
 uint64_t rp_manager_get_analyses_list_count(rp_manager *manager) {
-  return manager->getRunner().getAnalysisListCount();
+  revng_check(manager != nullptr);
+  return manager->getRunner().getAnalysesListCount();
 }
 
 rp_analyses_list *
 rp_manager_get_analyses_list(rp_manager *manager, uint64_t index) {
-  return &manager->getRunner().getAnalysisList(index);
+  revng_check(manager != nullptr);
+  return &manager->getRunner().getAnalysesList(index);
 }
 
 const char *rp_analyses_list_get_name(rp_analyses_list *list) {
+  revng_check(list != nullptr);
   return list->getName().data();
 }
 
 uint64_t rp_analyses_list_count(rp_analyses_list *list) {
+  revng_check(list != nullptr);
   return list->size();
 }
 
 rp_analysis *rp_manager_get_analysis(rp_manager *manager,
                                      rp_analyses_list *list,
                                      uint64_t index) {
+  revng_check(manager != nullptr);
+  revng_check(list != nullptr);
   return &manager->getAnalysis(list->at(index));
 }
 
-rp_diff_map *rp_manager_run_analyses_list(rp_manager *manager,
-                                          rp_analyses_list *list,
-                                          rp_invalidations *invalidations,
-                                          const rp_string_map *options) {
+rp_diff_map * /*owning*/
+rp_manager_run_analyses_list(rp_manager *manager,
+                             rp_analyses_list *list,
+                             rp_invalidations *invalidations,
+                             const rp_string_map *options) {
   revng_check(manager != nullptr);
+  revng_check(list != nullptr);
 
   ExistingOrNew<rp_invalidations> Invalidations(invalidations);
   ExistingOrNew<const rp_string_map> Options(options);

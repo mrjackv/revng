@@ -97,22 +97,22 @@ public:
   }
 
 public:
-  bool hasAnalysisList(llvm::StringRef Name) const {
+  bool hasAnalysesList(llvm::StringRef Name) const {
     return AnalysesLists.count(Name);
   }
 
-  size_t getAnalysisListCount() const { return AnalysesLists.size(); }
-  const AnalysesList &getAnalysisList(size_t Index) const {
+  size_t getAnalysesListCount() const { return AnalysesLists.size(); }
+  const AnalysesList &getAnalysesList(size_t Index) const {
     return std::next(AnalysesLists.begin(), Index)->second;
   }
 
-  const AnalysesList &getAnalysisList(llvm::StringRef Name) const {
+  const AnalysesList &getAnalysesList(llvm::StringRef Name) const {
     return AnalysesLists.find(Name)->second;
   }
 
-  void addAnalysisList(llvm::StringRef Name,
+  void addAnalysesList(llvm::StringRef Name,
                        llvm::ArrayRef<AnalysisReference> Analyses) {
-    revng_assert(not hasAnalysisList(Name));
+    revng_assert(not hasAnalysesList(Name));
     AnalysesLists.try_emplace(Name, pipeline::AnalysesList(Name, Analyses));
   }
 

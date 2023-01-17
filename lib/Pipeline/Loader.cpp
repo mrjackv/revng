@@ -332,7 +332,7 @@ Loader::load(llvm::ArrayRef<PipelineDeclaration> Pipelines) const {
         }
       }
 
-      ToReturn.addAnalysisList(List.Name, Analyses);
+      ToReturn.addAnalysesList(List.Name, Analyses);
     }
 
   return ToReturn;

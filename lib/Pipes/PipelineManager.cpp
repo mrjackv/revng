@@ -378,12 +378,10 @@ const pipeline::Step::AnalysisValueType &
 PipelineManager::getAnalysis(const AnalysisReference &Reference) const {
   auto &Step = getRunner().getStep(Reference.getStepName());
 
-  auto Analysis = llvm::find_if(Step.analyses(),
-                                [&](const Step::AnalysisValueType &Analysis)
-                                  -> bool {
-                                  return Analysis.first()
-                                         == Reference.getAnalysisName();
-                                });
+  auto Predicate = [&](const Step::AnalysisValueType &Analysis) -> bool {
+    return Analysis.first() == Reference.getAnalysisName();
+  };
+  auto Analysis = llvm::find_if(Step.analyses(), Predicate);
   return *Analysis;
 }
 
