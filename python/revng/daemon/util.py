@@ -60,7 +60,3 @@ def project_workdir() -> Optional[Path]:
             raise ValueError("Invalid Project ID")
     else:
         return None
-
-
-def target_dict_to_graphql(target_dict: Dict[str, str]):
-    return {"pathComponents": target_dict["path_components"], **target_dict}
