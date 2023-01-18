@@ -55,8 +55,3 @@ class ListenableManager(Manager):
         result = super().run_analysis(*args, **kwargs)
         self.handle_event(EventType.CONTEXT)
         return result
-
-    def run_all_analyses(self, *args, **kwargs):
-        result = super().run_all_analyses()
-        self.handle_event(EventType.CONTEXT)
-        return result

@@ -100,7 +100,10 @@ int main(int argc, const char *argv[]) {
   auto OriginalModel = getModel(Manager);
 
   if (Arguments.size() == 0) {
-    dbg << "all\n";
+    for (size_t I = 0; I < Manager.getRunner().getAnalysesListCount(); I++) {
+      AnalysesList AL = Manager.getRunner().getAnalysesList(I);
+      dbg << "list-" << AL.getName().str() << "\n";
+    }
     for (const auto &Step : Manager.getRunner())
       for (const auto &Analysis : Step.analyses())
         dbg << Analysis.getKey().str() << "\n";
@@ -116,9 +119,19 @@ int main(int argc, const char *argv[]) {
   auto &InputContainer = Manager.getRunner().begin()->containers()["input"];
   AbortOnError(InputContainer.loadFromDisk(Arguments[1]));
 
-  if (Arguments[0] == "all") {
-    InvalidationMap Map;
-    AbortOnError(Manager.runAllAnalyses(Map));
+  InvalidationMap InvMap;
+  if (Arguments[0].starts_with("list-")) {
+    std::string AnalysesListName = Arguments[0].substr(5);
+    if (!Manager.getRunner().hasAnalysesList(AnalysesListName)) {
+      AbortOnError(createStringError(inconvertibleErrorCode(),
+                                     "no known analyses list named %s, invoke "
+                                     "this command without arguments to see "
+                                     "the list of available analysis",
+                                     Arguments[0].c_str()));
+    }
+
+    AnalysesList AL = Manager.getRunner().getAnalysesList(AnalysesListName);
+    AbortOnError(Manager.runAnalyses(AL, InvMap));
   } else {
     auto *Step = getStepOfAnalysis(Manager.getRunner(), Arguments[0]);
     if (not Step) {
@@ -143,9 +156,9 @@ int main(int argc, const char *argv[]) {
 
     llvm::StringRef StepName = Step->getName();
     std::string AnalysisName = Analysis->getName();
-    InvalidationMap InvMap;
     AbortOnError(Manager.runAnalysis(AnalysisName, StepName, Map, InvMap));
   }
+
   if (NoApplyModel)
     AbortOnError(overrideModel(Manager, OriginalModel.get()));
 

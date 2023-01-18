@@ -119,7 +119,18 @@ class DaemonSelfTestCommand(Command):
                 )
             self.log("Upload complete")
 
-            await client.execute(gql("mutation { runAllAnalyses }"))
+            q = gql("""{ info { analysesLists { name }}}""")
+            analyses_lists = await client.execute(q)
+            list_names = [al["name"] for al in analyses_lists["info"]["analysesLists"]]
+
+            if "revng-initial-auto-analysis" in list_names:
+                await client.execute(
+                    gql("""mutation { runAnalysesList(name: "revng-initial-auto-analysis") }""")
+                )
+            if "revng-c-initial-auto-analysis" in list_names:
+                await client.execute(
+                    gql("""mutation { runAnalysesList(name: "revng-c-initial-auto-analysis") }""")
+                )
             self.log("Autoanalysis complete")
 
             q = gql(
