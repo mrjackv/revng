@@ -154,10 +154,13 @@ async def resolve_upload_file(_, info, *, file: UploadFile, container: str):
 
 
 @mutation.field("runAnalysis")
-async def resolve_run_analysis(_, info, *, step: str, analysis: str, container: str, targets: str):
+async def resolve_run_analysis(
+    _, info, *, step: str, analysis: str, container: str, targets: str, options: str | None = None
+):
     manager: Manager = info.context["manager"]
+    parse_options = json.loads(options) if options is not None else {}
     result = await run_in_executor(
-        lambda: manager.run_analysis(step, analysis, {container: targets.split(",")})
+        lambda: manager.run_analysis(step, analysis, {container: targets.split(",")}, parse_options)
     )
     await invalidation_queue.send(str(result.invalidations))
     return json.dumps(result.result)
