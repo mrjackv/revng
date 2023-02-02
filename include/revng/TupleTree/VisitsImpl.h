@@ -43,8 +43,7 @@ template<typename ResultT, typename RootT>
 ResultT *getByPath(const TupleTreePath &Path, RootT &M) {
   using namespace tupletree::detail;
   GetByPathVisitor<ResultT> GBPV;
-  if (auto Error = callByPath(GBPV, Path, M); Error) {
-    llvm::consumeError(std::move(Error));
+  if (not callByPath(GBPV, Path, M)) {
     return nullptr;
   }
 

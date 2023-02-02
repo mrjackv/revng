@@ -26,7 +26,9 @@
 #include "revng/TupleTree/TupleTreePath.h"
 
 template<typename T>
-concept HasValueType = requires(T &&) { typename T::value_type; };
+concept HasValueType = requires(T &&) {
+  typename T::value_type;
+};
 
 // clang-format off
 
@@ -75,47 +77,47 @@ concept TupleTreeRootLike = StrictSpecializationOf<AllowedTupleTreeTypes<T>,
                                                    std::variant>;
 
 namespace detail {
-template<TupleTreeRootLike Model>
-struct CheckTypeIsCorrect {
-  const AllowedTupleTreeTypes<Model> *Alternatives;
-  bool IsCorrect = false;
+  template<TupleTreeRootLike Model>
+  struct CheckTypeIsCorrect {
+    const AllowedTupleTreeTypes<Model> *Alternatives;
+    bool IsCorrect = false;
 
-  template<typename T, int I>
-  void visitTupleElement() {
-    using tuple_element = typename std::tuple_element<I, T>::type;
-    visit<tuple_element>();
+    template<typename T, int I>
+    void visitTupleElement() {
+      using tuple_element = typename std::tuple_element<I, T>::type;
+      visit<tuple_element>();
+    }
+
+    template<typename T, typename KeyT>
+    void visitContainerElement(KeyT Key) {}
+
+    template<revng::detail::SetOrKOC T>
+    void visit() {
+      check<typename T::value_type>();
+    }
+
+    template<typename T>
+    void visit() {
+      check<T>();
+    }
+
+    template<typename T>
+    void check() {
+      IsCorrect = std::holds_alternative<T>(*Alternatives);
+    }
+  };
+
+  template<TupleTreeRootLike Model>
+  llvm::Error checkTypeIsCorrect(const TupleTreePath &Path,
+                                 const AllowedTupleTreeTypes<Model> &Content) {
+    CheckTypeIsCorrect<Model> Checker{ &Content };
+    auto Result = callByPath<Model>(Checker, Path);
+    assert(Result == true);
+    if (not Checker.IsCorrect)
+      return llvm::createStringError(llvm::inconvertibleErrorCode(),
+                                     "type check has failed");
+    return llvm::Error::success();
   }
-
-  template<typename T, typename KeyT>
-  void visitContainerElement(KeyT Key) {}
-
-  template<revng::detail::SetOrKOC T>
-  void visit() {
-    check<typename T::value_type>();
-  }
-
-  template<typename T>
-  void visit() {
-    check<T>();
-  }
-
-  template<typename T>
-  void check() {
-    IsCorrect = std::holds_alternative<T>(*Alternatives);
-  }
-};
-
-template<TupleTreeRootLike Model>
-llvm::Error checkTypeIsCorrect(const TupleTreePath &Path,
-                               const AllowedTupleTreeTypes<Model> &Content) {
-  CheckTypeIsCorrect<Model> Checker{ &Content };
-  if (auto Error = callByPath<Model>(Checker, Path); Error)
-    return Error;
-  if (not Checker.IsCorrect)
-    return llvm::createStringError(llvm::inconvertibleErrorCode(),
-                                   "type check has failed");
-  return llvm::Error::success();
-}
 
 } // namespace detail
 
@@ -269,7 +271,8 @@ struct llvm::yaml::MappingTraits<T> {
       return;
 
     ::detail::MapDiffVisitor<Model> Visitor{ &IO, &*Entry, Name };
-    cantFail(callByPath<Model>(Visitor, Info.Path));
+    bool Result = callByPath<Model>(Visitor, Info.Path);
+    assert(Result == true);
   }
 
   static void readEntry(IO &IO, T &Info, const char *Name, EntryType &Entry) {
@@ -280,7 +283,8 @@ struct llvm::yaml::MappingTraits<T> {
     Entry.emplace();
     revng_assert(Entry.has_value());
     ::detail::MapDiffVisitor<Model> Visitor{ &IO, &*Entry, Name };
-    cantFail(callByPath<Model>(Visitor, Info.Path));
+    bool Result = callByPath<Model>(Visitor, Info.Path);
+    assert(Result == true);
   }
 
   static void
@@ -514,16 +518,16 @@ inline llvm::Error TupleTreeDiff<T>::apply(TupleTree<T> &M) const {
       continue;
     }
     tupletreediff::detail::ApplyDiffVisitor<T> ADV{ &C, Error.get() };
-    if (auto Error2 = callByPath(ADV, C.Path, *M, *pathAsString<T>(C.Path));
-        Error2) {
-      Error->consumeAndAppend(std::move(Error2),
-                              revng::DiffError::LocationType(C.Path));
-    }
+
+    // it is not true that it can't fail, but rather errors are registered
+    // directly into the variable Error by the visitor, and the following
+    // callByPath will always return success.
+    if (not callByPath(ADV, C.Path, *M, *pathAsString<T>(C.Path)))
+      Error->addReason("path not present",
+                       revng::TupleTreeLocation<model::Binary>(C.Path));
   }
+
   M.evictCachedReferences();
   M.initializeReferences();
-
-  if (Error->size() != 0)
-    return llvm::Error(std::move(Error));
-  return llvm::Error::success();
+  return revng::DiffError::makeError(std::move(Error));
 }

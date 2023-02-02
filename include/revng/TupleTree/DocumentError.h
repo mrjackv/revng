@@ -139,16 +139,11 @@ public:
     return Location::getTypeName();
   }
 
-  void consumeAndAppend(llvm::Error Error, const Location &ReasonLocation) {
-    if (!Error)
-      return;
-
-    std::string S;
-    llvm::raw_string_ostream OS(S);
-    OS << Error;
-    OS.flush();
-    llvm::consumeError(std::move(Error));
-    addReason(S, ReasonLocation);
+public:
+  static llvm::Error makeError(std::unique_ptr<Derived> Content) {
+    if (Content->size() != 0)
+      return llvm::Error(std::move(Content));
+    return llvm::Error::success();
   }
 
 public:
