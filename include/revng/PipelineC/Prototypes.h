@@ -43,9 +43,9 @@
  *
  * \section pipelineC_error_reporting Error Reporting
  *
- * Some functions can report detailed errors, these accept a ::rp_error_list as
+ * Some functions can report detailed errors, these accept a ::rp_error as
  * their last parameter, which will contain a list of errors in case the return
- * value of the method is false or \c NULL . The \a rp_error_list_* methods can
+ * value of the method is false or \c NULL . The \a rp_error* methods can
  * then be used to inspect the errors provided. In case errors are not of
  * interest, a \c NULL can be passed instead and errors will be silently
  * ignored.
@@ -175,33 +175,33 @@ rp_manager_create_global_copy(rp_manager *manager, const char *global_name);
  * \param serialied a c-string representing the serialized new global
  * \param global_name the name of the global
  * \param invalidations see \ref pipelineC_invalidations
- * \param error_list see \ref pipelineC_error_reporting
+ * \param error see \ref pipelineC_error_reporting
  * \return true on success, false otherwise
  */
 bool rp_manager_set_global(rp_manager *manager,
                            const char *serialized,
                            const char *global_name,
                            rp_invalidations *invalidations,
-                           rp_error_list *error_list);
+                           rp_error *error);
 
 /**
  * Checks that the serialized global would be correct if set as global_name
  * \param serialied a c-string representing the serialized new global
  * \param global_name the name of the global
- * \param error_list see \ref pipelineC_error_reporting
+ * \param error see \ref pipelineC_error_reporting
  * \return true on success, false otherwise
  */
 bool rp_manager_verify_global(rp_manager *manager,
                               const char *serialized,
                               const char *global_name,
-                              rp_error_list *error_list);
+                              rp_error *error);
 
 /**
  * Apply the specified diff to the global
  * \param diff a string representing the serialized diff
  * \param global_name the name of the global
  * \param invalidations see \ref pipelineC_invalidations
- * \param error_list see \ref pipelineC_error_reporting
+ * \param error see \ref pipelineC_error_reporting
  *
  * \return true on success, false otherwise
  */
@@ -209,19 +209,19 @@ bool rp_manager_apply_diff(rp_manager *manager,
                            const char *diff,
                            const char *global_name,
                            rp_invalidations *invalidations,
-                           rp_error_list *error_list);
+                           rp_error *error);
 
 /**
  * Checks that the specified diff would apply correctly to the global
  * \param diff a c-string representing the serialized diff
  * \param global_name the name of the global
- * \param error_list see \ref pipelineC_error_reporting
+ * \param error see \ref pipelineC_error_reporting
  * \return true on success, false otherwise
  */
 bool rp_manager_verify_diff(rp_manager *manager,
                             const char *diff,
                             const char *global_name,
-                            rp_error_list *error_list);
+                            rp_error *error);
 
 /**
  * \return the number of serializable global objects
@@ -686,55 +686,72 @@ uint64_t rp_rank_get_depth(rp_rank *rank);
 rp_rank *rp_rank_get_parent(rp_rank *rank);
 
 /**
- * \defgroup rp_error_list rp_error_list methods
+ * \defgroup rp_error rp_error methods
  * \{
  */
 
 /**
- * \return a new rp_error_list
- */
-rp_error_list * /*owning*/ rp_make_error_list();
-
-/**
- * \return if an error_list is empty (contains no errors)
- */
-bool rp_error_list_is_empty(rp_error_list *error);
-
-/**
  * \return number of errors present
  */
-uint64_t rp_error_list_size(rp_error_list *error);
+uint64_t rp_document_error_reasons_count(rp_document_error *error);
 
 /**
  * \return the indexth error's type
  */
 const char * /*owning*/
-rp_error_list_get_error_type(rp_error_list *error, uint64_t index);
+rp_document_error_get_error_type(rp_document_error *error);
 
 /**
  * \return the indexth error's location type
  */
 const char * /*owning*/
-rp_error_list_get_error_location_type(rp_error_list *error, uint64_t index);
+rp_document_error_get_location_type(rp_document_error *error);
 
 /**
  * \return the error's message at the specified index if present or nullptr
  * otherwise
  */
 const char * /*owning*/
-rp_error_list_get_error_message(rp_error_list *error, uint64_t index);
+rp_document_error_get_error_message(rp_document_error *error, uint64_t index);
 
 /**
  * \return the error's location at the specified index if present or nullptr
  * otherwise
  */
 const char * /*owning*/
-rp_error_list_get_error_location(rp_error_list *error, uint64_t index);
+rp_document_error_get_error_location(rp_document_error *error, uint64_t index);
 
 /**
  * Frees the provided error_error_list
  */
-void rp_error_list_destroy(rp_error_list *error);
+void rp_error_destroy(rp_error *error);
+
+/**
+ * \return true if error congains a rp_document_error
+ */
+bool rp_error_is_document_error(rp_error *error);
+
+/**
+ * \return a valid pointer to a document error if error is a document error,
+ * nullptr otherwise
+ */
+rp_document_error *rp_error_get_document_error(rp_error *error);
+
+/**
+ * \return true if this error encodes the success state.
+ */
+bool rp_error_is_success(rp_error *error);
+
+/**
+ * \return a error containing a success
+ */
+rp_error * /*owning*/ rp_error_create();
+
+/**
+ * \return a valid pointer to a simple error if error is a simple error,
+ * nullptr otherwise
+ */
+rp_simple_error *rp_error_get_simple_error(rp_error *error);
 
 /** \} */
 
