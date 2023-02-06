@@ -83,28 +83,6 @@ static bool loadLibraryPermanently(const char *LibraryPath) {
 static std::optional<revng::InitRevng> InitRevngInstance = std::nullopt;
 typedef void (*sighandler_t)(int);
 
-rp_simple_error *rp_error_get_simple_error(rp_error *error) {
-  if (error->get() == nullptr) {
-    return nullptr;
-  }
-
-  if (not std::holds_alternative<rp_simple_error>(**error)) {
-    return nullptr;
-  }
-
-  return &std::get<rp_simple_error>(**error);
-}
-
-rp_document_error *rp_error_get_document_error(rp_error *error) {
-  if (error->get() == nullptr) {
-    return nullptr;
-  }
-  if (not std::holds_alternative<rp_simple_error>(**error)) {
-    return nullptr;
-  }
-  return &std::get<rp_document_error>(**error);
-}
-
 bool rp_initialize(int argc,
                    char *argv[],
                    int libraries_count,
@@ -943,6 +921,39 @@ bool rp_diff_map_is_empty(rp_diff_map *map) {
   return true;
 }
 
+rp_error *rp_error_create() {
+  return new rp_error(nullptr);
+}
+
+bool rp_error_is_success(rp_error *error) {
+  return error->get() == nullptr;
+}
+
+bool rp_error_is_document_error(rp_error *error) {
+  return std::holds_alternative<rp_document_error>(**error);
+}
+
+rp_simple_error *rp_error_get_simple_error(rp_error *error) {
+  if (error->get() == nullptr
+      || not std::holds_alternative<rp_simple_error>(**error))
+    return nullptr;
+
+  return &std::get<rp_simple_error>(**error);
+}
+
+rp_document_error *rp_error_get_document_error(rp_error *error) {
+  if (error->get() == nullptr
+      || not std::holds_alternative<rp_document_error>(**error))
+    return nullptr;
+
+  return &std::get<rp_document_error>(**error);
+}
+
+void rp_error_destroy(rp_error *error_list) {
+  revng_check(error_list != nullptr);
+  delete error_list;
+}
+
 size_t rp_document_error_reasons_count(rp_document_error *error) {
   revng_check(error != nullptr);
   return error->Reasons.size();
@@ -950,29 +961,34 @@ size_t rp_document_error_reasons_count(rp_document_error *error) {
 
 const char *rp_document_error_get_error_type(rp_document_error *error) {
   revng_check(error != nullptr);
-  return copyString(error->ErrorType);
+  return error->ErrorType.c_str();
 }
 
 const char *rp_document_error_get_location_type(rp_document_error *error_list) {
   revng_check(error_list != nullptr);
-  return copyString(error_list->LocationType);
+  return error_list->LocationType.c_str();
 }
 
 const char *
 rp_document_error_get_error_message(rp_document_error *error, uint64_t index) {
   revng_check(error != nullptr);
-  return copyString(error->Reasons.at(index).Message);
+  return error->Reasons.at(index).Message.c_str();
 }
 
 const char *
 rp_document_error_get_error_location(rp_document_error *error, uint64_t index) {
   revng_check(error != nullptr);
-  return copyString(error->Reasons.at(index).Location);
+  return error->Reasons.at(index).Location.c_str();
 }
 
-void rp_error_destroy(rp_error *error_list) {
-  revng_check(error_list != nullptr);
-  delete error_list;
+const char *rp_simple_error_get_error_type(rp_simple_error *error) {
+  revng_check(error != nullptr);
+  return error->ErrorType.c_str();
+}
+
+const char *rp_simple_error_get_message(rp_simple_error *error) {
+  revng_check(error != nullptr);
+  return error->Message.c_str();
 }
 
 int rp_analysis_get_options_count(rp_analysis *analysis) {
@@ -1066,8 +1082,4 @@ const rp_kind *rp_kind_get_preferred_kind(rp_kind *kind, uint64_t index) {
     return PreferredKinds[index];
   else
     return nullptr;
-}
-
-rp_error *rp_error_create() {
-  return new rp_error(nullptr);
 }

@@ -44,11 +44,13 @@
  * \section pipelineC_error_reporting Error Reporting
  *
  * Some functions can report detailed errors, these accept a ::rp_error as
- * their last parameter, which will contain a list of errors in case the return
- * value of the method is false or \c NULL . The \a rp_error* methods can
- * then be used to inspect the errors provided. In case errors are not of
- * interest, a \c NULL can be passed instead and errors will be silently
- * ignored.
+ * their last parameter. After calling it will contain either an
+ * rp_document_error (which can represent multiple locations) or a
+ * rp_simple_error (which is a generic error without a location) in case the
+ * return value of the method is false or \c NULL . The \a rp_error* methods can
+ * then be used to inspect the rp_error and extract the underlying
+ * rp_{simple,document}_error object. In case errors are not of interest, a
+ * \c NULL can be passed instead and errors will be silently ignored.
  */
 
 /**
@@ -691,43 +693,17 @@ rp_rank *rp_rank_get_parent(rp_rank *rank);
  */
 
 /**
- * \return number of errors present
+ * \return a error containing a success
  */
-uint64_t rp_document_error_reasons_count(rp_document_error *error);
+rp_error * /*owning*/ rp_error_create();
 
 /**
- * \return the indexth error's type
+ * \return true if this error encodes the success state.
  */
-const char * /*owning*/
-rp_document_error_get_error_type(rp_document_error *error);
+bool rp_error_is_success(rp_error *error);
 
 /**
- * \return the indexth error's location type
- */
-const char * /*owning*/
-rp_document_error_get_location_type(rp_document_error *error);
-
-/**
- * \return the error's message at the specified index if present or nullptr
- * otherwise
- */
-const char * /*owning*/
-rp_document_error_get_error_message(rp_document_error *error, uint64_t index);
-
-/**
- * \return the error's location at the specified index if present or nullptr
- * otherwise
- */
-const char * /*owning*/
-rp_document_error_get_error_location(rp_document_error *error, uint64_t index);
-
-/**
- * Frees the provided error_error_list
- */
-void rp_error_destroy(rp_error *error);
-
-/**
- * \return true if error congains a rp_document_error
+ * \return true if error contains a rp_document_error
  */
 bool rp_error_is_document_error(rp_error *error);
 
@@ -738,20 +714,66 @@ bool rp_error_is_document_error(rp_error *error);
 rp_document_error *rp_error_get_document_error(rp_error *error);
 
 /**
- * \return true if this error encodes the success state.
- */
-bool rp_error_is_success(rp_error *error);
-
-/**
- * \return a error containing a success
- */
-rp_error * /*owning*/ rp_error_create();
-
-/**
  * \return a valid pointer to a simple error if error is a simple error,
  * nullptr otherwise
  */
 rp_simple_error *rp_error_get_simple_error(rp_error *error);
+
+/**
+ * Frees the provided error_error_list
+ */
+void rp_error_destroy(rp_error *error);
+
+/** \} */
+
+/**
+ * \defgroup rp_document_error rp_document_error methods
+ */
+
+/**
+ * \return number of errors present
+ */
+uint64_t rp_document_error_reasons_count(rp_document_error *error);
+
+/**
+ * \return the error's type
+ */
+const char *rp_document_error_get_error_type(rp_document_error *error);
+
+/**
+ * \return the error's location type
+ */
+const char *rp_document_error_get_location_type(rp_document_error *error);
+
+/**
+ * \return the error's message at the specified index if present or nullptr
+ * otherwise
+ */
+const char *
+rp_document_error_get_error_message(rp_document_error *error, uint64_t index);
+
+/**
+ * \return the error's location at the specified index if present or nullptr
+ * otherwise
+ */
+const char *
+rp_document_error_get_error_location(rp_document_error *error, uint64_t index);
+
+/** \} */
+
+/**
+ * \defgroup rp_document_error rp_document_error methods
+ */
+
+/**
+ * \return the error's type
+ */
+const char *rp_simple_error_get_error_type(rp_simple_error *error);
+
+/**
+ * \return the error's message
+ */
+const char *rp_simple_error_get_message(rp_simple_error *error);
 
 /** \} */
 

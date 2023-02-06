@@ -29,10 +29,10 @@ public:
 struct rp_simple_error {
 public:
   std::string Message;
-  std::string Type;
+  std::string ErrorType;
 
   rp_simple_error(std::string Message, std::string Type) :
-    Message(std::move(Message)), Type(std::move(Type)) {}
+    Message(std::move(Message)), ErrorType(std::move(Type)) {}
 };
 
 using rp_error = std::unique_ptr<
