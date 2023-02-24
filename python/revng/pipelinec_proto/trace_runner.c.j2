@@ -1,0 +1,33 @@
+{#
+    This file is distributed under the MIT License. See LICENSE.md for details.
+#}
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include "revng/PipelineC/ForwardDeclarationsC.h"
+#include "revng/PipelineC/Prototypes.h"
+#include "revng/Support/Assert.h"
+
+
+static inline void remove_directory(const char *path) {
+    const char *command_prefix = "rm -r ";
+    char *command = (char *) malloc((strlen(path) + strlen(command_prefix) + 1) * sizeof(char));
+    strcpy(command, command_prefix);
+    strcat(command, path);
+    system(command);
+}
+
+
+int main() {
+    char workdir_template[] = "/tmp/tmp.trace-workdir.XXXXXX";
+    {% for command in commands %}
+    {%- filter indent(4) %}
+{{ command | command_comment }}
+{{ print_command(command) }}
+    {% endfilter %}
+    {%- endfor %}
+    {{ print_epilogue() | indent(4) }}
+}

@@ -100,7 +100,7 @@ set(REVNG_CLI_COMMANDS_MODULE_FILES
     revng/cli/_commands/opt.py revng/cli/_commands/pipeline_tools.py
     revng/cli/_commands/override_by_name.py revng/cli/_commands/daemon.py
     revng/cli/_commands/hard_purge.py revng/cli/_commands/import_idb.py
-    revng/cli/_commands/idb_converter.py)
+    revng/cli/_commands/idb_converter.py revng/cli/_commands/compile_trace.py)
 
 python_module(TARGET_NAME revng-python-cli-commands MODULE_FILES
               ${REVNG_CLI_COMMANDS_MODULE_FILES})
@@ -175,3 +175,18 @@ set(REVNG_SUPPORT_MODULE_FILES revng/support/__init__.py revng/support/elf.py
                                revng/support/collect.py)
 python_module(TARGET_NAME revng-python-support MODULE_FILES
               ${REVNG_SUPPORT_MODULE_FILES})
+
+#
+# Install revng.pipelinec_proto
+#
+python_module(
+  TARGET_NAME
+  python-pipelinecproto
+  MODULE_FILES
+  "revng/pipelinec_proto/__init__.py"
+  "revng/pipelinec_proto/add_tracing.py"
+  "revng/pipelinec_proto/compile.py"
+  "revng/pipelinec_proto/parse.py"
+  "revng/pipelinec_proto/proto.py"
+  "revng/pipelinec_proto/trace_runner.c.j2"
+  "revng/pipelinec_proto/tracing_wrapper.cpp.j2")

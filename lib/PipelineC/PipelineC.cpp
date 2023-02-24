@@ -286,7 +286,7 @@ uint64_t rp_step_get_analyses_count(const rp_step *step) {
 
 rp_analysis *rp_step_get_analysis(const rp_step *step, uint64_t index) {
   revng_check(step != nullptr);
-  if (index >= rp_step_get_analyses_count(step))
+  if (index >= step->getAnalysesSize())
     return nullptr;
 
   return &*(std::next(step->analysesBegin(), index));
