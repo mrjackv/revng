@@ -5,14 +5,14 @@
 //
 
 typedef struct rp_manager rp_manager;
-typedef struct rp_kind rp_kind;
-typedef struct rp_rank rp_rank;
+typedef const struct _rp_kind rp_kind;
+typedef const struct _rp_rank rp_rank;
 typedef struct rp_step rp_step;
 typedef struct rp_container rp_container;
-typedef struct rp_container_identifier rp_container_identifier;
+typedef const struct _rp_container_identifier rp_container_identifier;
 typedef struct rp_target rp_target;
-typedef struct rp_targets_list rp_targets_list;
-typedef struct rp_analysis rp_analysis;
+typedef const struct _rp_targets_list rp_targets_list;
+typedef const struct _rp_analysis rp_analysis;
 typedef struct rp_diff_map rp_diff_map;
 typedef struct rp_error rp_error;
 typedef struct rp_document_error rp_document_error;

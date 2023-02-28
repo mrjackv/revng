@@ -60,12 +60,12 @@
  *
  * \return true if the initialization was successful.
  */
-bool rp_initialize(int argc,
-                   char *argv[],
-                   int libraries_count,
+bool rp_initialize(uint32_t argc,
+                   const char *argv[],
+                   uint32_t libraries_count,
                    const char *libraries_path[],
-                   int signals_to_preserve_count,
-                   int signals_to_preserve[]);
+                   uint32_t signals_to_preserve_count,
+                   uint8_t signals_to_preserve[]);
 
 /**
  * Should be called on clean exit to clean up all LLVM-related stuff used by
@@ -123,15 +123,15 @@ void rp_manager_destroy(rp_manager *manager);
 /**
  * \return the number of containers registered in this pipeline.
  */
-uint64_t rp_manager_containers_count(rp_manager *manager);
+uint64_t rp_manager_containers_count(const rp_manager *manager);
 
 /**
  * \param index must be less than rp_manager_containers_count(manager).
  *
  * \return the container at the provided index.
  */
-rp_container_identifier *
-rp_manager_get_container_identifier(rp_manager *manager, uint64_t index);
+const rp_container_identifier *
+rp_manager_get_container_identifier(const rp_manager *manager, uint64_t index);
 
 /**
  *  Trigger the serialization of the pipeline on disk.
@@ -150,7 +150,7 @@ bool rp_manager_save_context(rp_manager *manager, const char *path);
 /**
  * \return the number of steps present in the manager.
  */
-uint64_t rp_manager_steps_count(rp_manager *manager);
+uint64_t rp_manager_steps_count(const rp_manager *manager);
 
 const inline uint64_t RP_STEP_NOT_FOUND = UINT64_MAX;
 
@@ -158,19 +158,21 @@ const inline uint64_t RP_STEP_NOT_FOUND = UINT64_MAX;
  * \return the index of the step with the given name or RP_STEP_NOT_FOUND if no
  *         step with such name was found.
  */
-uint64_t rp_manager_step_name_to_index(rp_manager *manager, const char *name);
+uint64_t
+rp_manager_step_name_to_index(const rp_manager *manager, const char *name);
 
 /**
  * \return the step with the provided index, or NULL if not such step existed.
  */
-rp_step *rp_manager_get_step(rp_manager *manager, uint64_t index);
+rp_step *rp_manager_get_step(const rp_manager *manager, uint64_t index);
 
 /**
  * \param global_name the name of the global
  * \return the serialized string rappresenting a global object
  */
-const char * /*owning*/
-rp_manager_create_global_copy(rp_manager *manager, const char *global_name);
+char * /*owning*/
+rp_manager_create_global_copy(const rp_manager *manager,
+                              const char *global_name);
 
 /**
  * Sets the contents of the specified global
@@ -228,31 +230,31 @@ bool rp_manager_verify_diff(rp_manager *manager,
 /**
  * \return the number of serializable global objects
  */
-int rp_manager_get_globals_count(rp_manager *manager);
+uint64_t rp_manager_get_globals_count(rp_manager *manager);
 
 /**
  * \return the owning pointer to the name of serializable global object
  * with the provided index, nullptr if the index was out of bound.
  */
-const char * /*owning*/
-rp_manager_get_global_name(rp_manager *manager, int index);
+char * /*owning*/
+rp_manager_get_global_name(const rp_manager *manager, uint64_t index);
 
 /**
  * \return the kind with the provided name, NULL if no kind had the provided
  *         name.
  */
-rp_kind *
-rp_manager_get_kind_from_name(rp_manager *manager, const char *kind_name);
+const rp_kind *
+rp_manager_get_kind_from_name(const rp_manager *manager, const char *kind_name);
 
 /**
  * \return the number of kinds present in the manager.
  */
-uint64_t rp_manager_kinds_count(rp_manager *manager);
+uint64_t rp_manager_kinds_count(const rp_manager *manager);
 
 /**
  * \return the kind with the provided index, or NULL if not such step existed.
  */
-rp_kind *rp_manager_get_kind(rp_manager *manager, uint64_t index);
+const rp_kind *rp_manager_get_kind(const rp_manager *manager, uint64_t index);
 
 /**
  * Request the production of the provided targets in a particular container.
@@ -261,10 +263,10 @@ rp_kind *rp_manager_get_kind(rp_manager *manager, uint64_t index);
  *
  * \return 0 if an error was encountered, the serialized container otherwise
  */
-const rp_buffer * /*owning*/
+rp_buffer * /*owning*/
 rp_manager_produce_targets(rp_manager *manager,
                            uint64_t targets_count,
-                           rp_target *targets[],
+                           const rp_target *targets[],
                            rp_step *step,
                            rp_container *container);
 
@@ -310,8 +312,9 @@ rp_manager_run_all_analyses(rp_manager *manager,
  * \return the container status associated to the provided \p container
  *         or NULL if no status is associated to the provided container.
  */
-rp_targets_list *rp_manager_get_container_targets_list(rp_manager *manager,
-                                                       rp_container *container);
+const rp_targets_list *
+rp_manager_get_container_targets_list(const rp_manager *manager,
+                                      const rp_container *container);
 
 /**
  * \param step_name the name of the step
@@ -339,7 +342,7 @@ uint64_t rp_targets_list_targets_count(rp_targets_list *targets_list);
  * \return the n-th target inside the provided \p targets_list or NULL if it's
  *         out of bounds.
  */
-rp_target *
+const rp_target *
 rp_targets_list_get_target(rp_targets_list *targets_list, uint64_t index);
 
 /** \} */
@@ -367,46 +370,47 @@ rp_container_identifier_get_name(rp_container_identifier *container_identifier);
 /**
  * \return the step name.
  */
-const char *rp_step_get_name(rp_step *step);
+const char *rp_step_get_name(const rp_step *step);
 
 /**
  * \return the container associated to the provided \p identifier at the given
  *         \p step or nullptr if not present.
  */
 rp_container *
-rp_step_get_container(rp_step *step, rp_container_identifier *identifier);
+rp_step_get_container(rp_step *step, const rp_container_identifier *identifier);
 
 /**
  * \return a \p step 's parent, if present
  */
-rp_step *rp_step_get_parent(rp_step *step);
+const rp_step *rp_step_get_parent(const rp_step *step);
 
 /**
  * \return the artifacts kind of the step
  */
-rp_kind *rp_step_get_artifacts_kind(rp_step *step);
+const rp_kind *rp_step_get_artifacts_kind(const rp_step *step);
 
 /**
  * \return the artifacts container of the step
  */
-rp_container *rp_step_get_artifacts_container(rp_step *step);
+const rp_container *rp_step_get_artifacts_container(rp_step *step);
 
 /**
  * \return the artifacts filename to use for a single target
  */
-const char *rp_step_get_artifacts_single_target_filename(rp_step *step);
+char * /*owning*/
+rp_step_get_artifacts_single_target_filename(const rp_step *step);
 
 /**
  * \return the number of analysis present in this step
  */
-int rp_step_get_analyses_count(rp_step *step);
+uint64_t rp_step_get_analyses_count(const rp_step *step);
 
 /**
  * \return the of the analysis in the provided step with the provided index.
  *
  * index must be less than rp_step_get_analyses_count
  */
-rp_analysis *rp_step_get_analysis(rp_step *step, int index);
+rp_analysis *rp_step_get_analysis(const rp_step *step, uint64_t index);
 
 /**
  * \return the name of the analysis
@@ -417,7 +421,7 @@ const char *rp_analysis_get_name(rp_analysis *analysis);
  * \return the count of containers used by the provided analysis.
  * is no analysis
  */
-int rp_analysis_get_arguments_count(rp_analysis *analysis);
+uint64_t rp_analysis_get_arguments_count(rp_analysis *analysis);
 
 /**
  * \return a owning pointer to the name of the container used as index
@@ -425,44 +429,47 @@ int rp_analysis_get_arguments_count(rp_analysis *analysis);
  *
  * index must be less than rp_step_get_analysis_arguments_count(step)
  */
-const char * /*owning*/
-rp_analysis_get_argument_name(rp_analysis *analysis, int index);
+char * /*owning*/
+rp_analysis_get_argument_name(rp_analysis *analysis, uint64_t index);
 
 /**
  * \return the quantity of kinds that can be accepted by a analysis
  */
-int rp_analysis_get_argument_acceptable_kinds_count(rp_analysis *analysis,
-                                                    int argument_index);
+uint64_t
+rp_analysis_get_argument_acceptable_kinds_count(rp_analysis *analysis,
+                                                uint64_t argument_index);
 
 /**
  * \return the ammout of extra arguments of the provided analysis
  */
-int rp_analysis_get_options_count(rp_analysis *analysis);
+uint64_t rp_analysis_get_options_count(rp_analysis *analysis);
 
 /**
  * \return the name of the extra argument with the provided index. Returns
  * nullptr if extra_argument_index < 0 or extra_argument_index >
  * rp_analysis_get_extra_argument_count(analysis)
  */
-const char * /*owning*/
-rp_analysis_get_option_name(rp_analysis *analysis, int extra_argument_index);
+char * /*owning*/
+rp_analysis_get_option_name(rp_analysis *analysis,
+                            uint64_t extra_argument_index);
 
 /**
  * \return the type of the extra argument with the provided index. Returns
  * nullptr if extra_argument_index < 0 or extra_argument_index >
  * rp_analysis_get_extra_argument_count(analysis)
  */
-const char * /*owning*/
-rp_analysis_get_option_type(rp_analysis *analysis, int extra_argument_index);
+char * /*owning*/
+rp_analysis_get_option_type(rp_analysis *analysis,
+                            uint64_t extra_argument_index);
 
 /**
  * \return the pointer to a acceptable kind for the container with index
  * argument_index within a analysis, nullptr if kind_index is >= than
  * rp_analysis_argument_acceptable_kinds_count(analysis, argument_index)
  */
-const rp_kind *rp_analysis_get_argument_acceptable_kind(rp_analysis *analysis,
-                                                        int argument_index,
-                                                        int kind_index);
+rp_kind *rp_analysis_get_argument_acceptable_kind(rp_analysis *analysis,
+                                                  uint64_t argument_index,
+                                                  uint64_t kind_index);
 
 /**
  * Serialize a single pipeline step to the specified directory
@@ -497,7 +504,7 @@ rp_target * /*owning*/ rp_target_create(rp_kind *kind,
  * \return NULL if \p string is malformed.
  */
 rp_target * /*owning*/
-rp_target_create_from_string(rp_manager *manager, const char *string);
+rp_target_create_from_string(const rp_manager *manager, const char *string);
 
 /**
  * Delete the provided target.
@@ -507,17 +514,17 @@ void rp_target_destroy(rp_target *target);
 /**
  * \return the kind of the provided target
  */
-rp_kind *rp_target_get_kind(rp_target *target);
+const rp_kind *rp_target_get_kind(const rp_target *target);
 
 /**
  * Serializes target into a string.
  */
-char * /*owning*/ rp_target_create_serialized_string(rp_target *target);
+char * /*owning*/ rp_target_create_serialized_string(const rp_target *target);
 
 /**
  * \return the number of path component in \p target.
  */
-uint64_t rp_target_path_components_count(rp_target *target);
+uint64_t rp_target_path_components_count(const rp_target *target);
 
 /**
  * \return the name of the n-th path_component, or "*" if it represents all
@@ -525,13 +532,14 @@ uint64_t rp_target_path_components_count(rp_target *target);
  *
  * \note The returned string must not be freed by the caller.
  */
-const char *rp_target_get_path_component(rp_target *target, uint64_t index);
+const char *
+rp_target_get_path_component(const rp_target *target, uint64_t index);
 
 /**
  * \return true if the provided target is currently cached in the provided
  * container. False otherwise
  */
-bool rp_target_is_ready(rp_target *target, rp_container *container);
+bool rp_target_is_ready(const rp_target *target, const rp_container *container);
 
 /** \} */
 
@@ -563,7 +571,7 @@ uint64_t rp_kind_get_defined_location_count(rp_kind *kind);
 /**
  * \return the rank-location at index or nullptr
  */
-const rp_rank *rp_kind_get_defined_location(rp_kind *kind, uint64_t index);
+rp_rank *rp_kind_get_defined_location(rp_kind *kind, uint64_t index);
 
 /**
  * \return the number of kinds the kind can reference
@@ -573,7 +581,7 @@ uint64_t rp_kind_get_preferred_kind_count(rp_kind *kind);
 /**
  * \return the kind definition at index or nullptr
  */
-const rp_kind *rp_kind_get_preferred_kind(rp_kind *kind, uint64_t index);
+rp_kind *rp_kind_get_preferred_kind(rp_kind *kind, uint64_t index);
 
 /** \} */
 
@@ -585,19 +593,19 @@ const rp_kind *rp_kind_get_preferred_kind(rp_kind *kind, uint64_t index);
 /**
  * \return the name of \p container.
  */
-const char *rp_container_get_name(rp_container *container);
+const char *rp_container_get_name(const rp_container *container);
 
 /**
  * \return the mime type of \p container
  */
-const char *rp_container_get_mime(rp_container *container);
+const char *rp_container_get_mime(const rp_container *container);
 
 /**
  * Serialize \p container in \p path.
  *
  * \return 0 if an error was encountered 1 otherwise.
  */
-bool rp_container_store(rp_container *container, const char *path);
+bool rp_container_store(const rp_container *container, const char *path);
 
 /**
  * Load the provided container given a buffer
@@ -618,8 +626,9 @@ bool rp_manager_container_deserialize(rp_manager *manager,
  * \return the serialized content of the element associated to the provided
  * target, or nullptr if the content hasn't been produced yet
  */
-const rp_buffer * /*owning*/
-rp_container_extract_one(rp_container *container, rp_target *target);
+rp_buffer * /*owning*/
+rp_container_extract_one(const rp_container *container,
+                         const rp_target *target);
 
 /** \} */
 
@@ -639,13 +648,13 @@ void rp_diff_map_destroy(rp_diff_map *to_free);
  * \return nullptr if the global is not present in the diff_map, otherwise a
  * string of serialized version of the changes applied to the global
  */
-const char * /*owning*/
-rp_diff_map_get_diff(rp_diff_map *map, const char *global_name);
+char * /*owning*/
+rp_diff_map_get_diff(const rp_diff_map *map, const char *global_name);
 
 /**
  * \return true if the rp_diff_map is empty (no changes), false otherwise
  */
-bool rp_diff_map_is_empty(rp_diff_map *map);
+bool rp_diff_map_is_empty(const rp_diff_map *map);
 
 /** \} */
 
@@ -674,17 +683,17 @@ rp_rank *rp_rank_get_from_name(const char *rank_name);
  * \return the name of \p Rank
  * \note The returned string must not be freed by the caller.
  */
-const char *rp_rank_get_name(rp_rank *rank);
+const char *rp_rank_get_name(const rp_rank *rank);
 
 /**
  * \return the depth of \p Rank
  */
-uint64_t rp_rank_get_depth(rp_rank *rank);
+uint64_t rp_rank_get_depth(const rp_rank *rank);
 
 /**
  * \return \p Rank 's parent, or NULL if it has none
  */
-rp_rank *rp_rank_get_parent(rp_rank *rank);
+rp_rank *rp_rank_get_parent(const rp_rank *rank);
 
 /**
  * \defgroup rp_error rp_error methods
@@ -699,12 +708,12 @@ rp_error * /*owning*/ rp_error_create();
 /**
  * \return true if this error encodes the success state.
  */
-bool rp_error_is_success(rp_error *error);
+bool rp_error_is_success(const rp_error *error);
 
 /**
  * \return true if error contains a rp_document_error
  */
-bool rp_error_is_document_error(rp_error *error);
+bool rp_error_is_document_error(const rp_error *error);
 
 /**
  * \return a valid pointer to a document error if error is a document error,
@@ -732,31 +741,31 @@ void rp_error_destroy(rp_error *error);
 /**
  * \return number of errors present
  */
-uint64_t rp_document_error_reasons_count(rp_document_error *error);
+uint64_t rp_document_error_reasons_count(const rp_document_error *error);
 
 /**
  * \return the error's type
  */
-const char *rp_document_error_get_error_type(rp_document_error *error);
+const char *rp_document_error_get_error_type(const rp_document_error *error);
 
 /**
  * \return the error's location type
  */
-const char *rp_document_error_get_location_type(rp_document_error *error);
+const char *rp_document_error_get_location_type(const rp_document_error *error);
 
 /**
  * \return the error's message at the specified index if present or nullptr
  * otherwise
  */
-const char *
-rp_document_error_get_error_message(rp_document_error *error, uint64_t index);
+const char *rp_document_error_get_error_message(const rp_document_error *error,
+                                                uint64_t index);
 
 /**
  * \return the error's location at the specified index if present or nullptr
  * otherwise
  */
-const char *
-rp_document_error_get_error_location(rp_document_error *error, uint64_t index);
+const char *rp_document_error_get_error_location(const rp_document_error *error,
+                                                 uint64_t index);
 
 /** \} */
 
@@ -767,12 +776,12 @@ rp_document_error_get_error_location(rp_document_error *error, uint64_t index);
 /**
  * \return the error's type
  */
-const char *rp_simple_error_get_error_type(rp_simple_error *error);
+const char *rp_simple_error_get_error_type(const rp_simple_error *error);
 
 /**
  * \return the error's message
  */
-const char *rp_simple_error_get_message(rp_simple_error *error);
+const char *rp_simple_error_get_message(const rp_simple_error *error);
 
 /** \} */
 
@@ -819,7 +828,7 @@ void rp_invalidations_destroy(rp_invalidations *invalidations);
 /**
  * \return a string where each line is a target that has been invalidated
  */
-const char * /* owning */
+char * /* owning */
 rp_invalidations_serialize(const rp_invalidations *invalidations);
 
 /** \} */
@@ -842,6 +851,6 @@ const char *rp_buffer_data(const rp_buffer *buffer);
 /**
  * Free a rp_buffer
  */
-void rp_buffer_destroy(const rp_buffer *buffer);
+void rp_buffer_destroy(rp_buffer *buffer);
 
 /** \} */
