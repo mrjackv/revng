@@ -10,6 +10,7 @@
 #include "llvm/Support/Process.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "revng/ADT/ConstexprString.h"
 #include "revng/PipelineC/PipelineC.h"
 #include "revng/Support/Assert.h"
 
@@ -183,3 +184,31 @@ static std::optional<PipelineCTracer>
     return std::nullopt;
   }
 }();
+
+template<ConstexprString Name, int I>
+constexpr int LengthHint = -1;
+
+template<ConstexprString Name, typename... T>
+static void handleArgs(T &&...Args) {
+}
+
+template<ConstexprString Name, typename CalleeT, typename... ArgsT>
+decltype(auto) wrap(CalleeT Callee, ArgsT... Args) {
+  using ReturnT = typename decltype(std::function{ Callee })::result_type;
+    if (TracingEnabled) {
+      Tracer->functionPrelude(Name.String.data());
+      handleArgs<Name>(Args...);
+      if constexpr (std::is_same_v<ReturnT, void>) {
+      Callee(std::forward<ArgsT>(Args)...);
+      } else {
+      ReturnT Return = Callee(std::forward<ArgsT>(Args)...);
+      return Return;
+
+      }
+    } else {
+      if constexpr (std::is_same_v<ReturnT, void>)
+      Callee(std::forward<ArgsT>(Args)...);
+      else
+      return Callee(std::forward<ArgsT>(Args)...);
+    }
+}
