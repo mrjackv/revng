@@ -38,6 +38,8 @@ LENGTH_HINTS = {
     "rp_manager_container_deserialize": {"content": "size"},
 }
 
+LH_DECL = "template<> constexpr int LengthHint"
+
 
 @dataclass
 class Argument:
@@ -143,11 +145,10 @@ def generate(output: Path, tracing: Path, impl_files: List[Path], functions: Lis
                 for arg, len_arg in LENGTH_HINTS[f.name].items():
                     arg_pos = next(i for i, a in enumerate(f.arguments) if a.name == arg)
                     len_arg_pos = next(i for i, a in enumerate(f.arguments) if a.name == len_arg)
-                    output_file.write(
-                        f'template<> constexpr int LengthHint<"{f.name}", {arg_pos}> = {len_arg_pos};\n'
-                    )
+                    output_file.write(f'{LH_DECL}<"{f.name}", {arg_pos}> = {len_arg_pos};\n')
             output_file.write(
-                f'{f.return_type} {f.name}({args}) {{ return wrap<"{f.name}">(_{f.name}{arg_names}); }};\n'
+                f"{f.return_type} {f.name}({args}) "
+                f'{{ return wrap<"{f.name}">(_{f.name}{arg_names}); }};\n'
             )
 
     for impl in impl_files:

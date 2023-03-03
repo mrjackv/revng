@@ -37,6 +37,13 @@ public:
   constexpr operator std::string_view() const noexcept {
     return std::string_view{ String.data(), String.size() };
   }
+
+  template<size_t K>
+  constexpr bool operator==(const ConstexprString<K> &Other) const noexcept {
+    if constexpr (N != K)
+      return false;
+    return std::string_view(this) == std::string_view(Other);
+  }
 };
 
 namespace examples {

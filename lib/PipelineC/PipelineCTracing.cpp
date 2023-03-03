@@ -86,7 +86,7 @@ public:
     OS.flush();
   }
 
-  void newVariable() {
+  void newArgument() {
     OS << "  - ";
     OS.flush();
   }
@@ -188,27 +188,76 @@ static std::optional<PipelineCTracer>
 template<ConstexprString Name, int I>
 constexpr int LengthHint = -1;
 
+template<typename T, typename V>
+constexpr bool is = std::is_same_v<std::remove_cvref_t<T>, V>;
+
+template<ConstexprString Name, int I, int N, typename... T>
+static void handleArg(std::tuple<T...> Args) {
+  Tracer->newArgument();
+  using ArgT = decltype(std::get<I>(Args));
+  using RArgT = std::remove_reference_t<ArgT>;
+  ArgT Arg = std::get<I>(Args);
+  constexpr int LH = LengthHint<Name, I>;
+  if constexpr (LH >= 0) {
+    // Handle arguments with length hints
+    if constexpr (is<ArgT, char *>) {
+      // Buffer
+      Tracer->printBuffer(Arg, std::get<LH>(Args));
+    } else {
+      // Array-like
+      if constexpr (is<RArgT, uint64_t *>) {
+        Tracer->printIntList(Arg, std::get<LH>(Args));
+      } else if constexpr (is<ArgT, const char *>) {
+        Tracer->printStringList(&Arg, std::get<LH>(Args));
+      }
+    }
+  }
+  if constexpr (std::is_same_v<RArgT, uint64_t>) {
+    Tracer->printInt(Arg);
+  } else {
+    Tracer->printVoid();
+  }
+  if constexpr (I + 1 < N)
+    handleArg<Name, I + 1, N>(Args);
+}
+
 template<ConstexprString Name, typename... T>
 static void handleArgs(T &&...Args) {
+  if constexpr (sizeof...(T) > 0)
+    handleArg<Name, 0, sizeof...(T)>(std::make_tuple(Args...));
+}
+
+template<typename T>
+static void handleReturn(T &&Ret) {
+  using RetT = std::remove_reference_t<T>;
+  if constexpr (std::is_same_v<RetT, bool>) {
+    Tracer->printBool(Ret);
+  } else if constexpr (std::is_same_v<RetT, uint64_t>) {
+    Tracer->printInt(Ret);
+  } else {
+    Tracer->printVoid();
+  }
 }
 
 template<ConstexprString Name, typename CalleeT, typename... ArgsT>
-decltype(auto) wrap(CalleeT Callee, ArgsT... Args) {
+inline decltype(auto) wrap(CalleeT Callee, ArgsT... Args) {
   using ReturnT = typename decltype(std::function{ Callee })::result_type;
-    if (TracingEnabled) {
-      Tracer->functionPrelude(Name.String.data());
-      handleArgs<Name>(Args...);
-      if constexpr (std::is_same_v<ReturnT, void>) {
+  if (TracingEnabled) {
+    Tracer->functionPrelude(Name.String.data());
+    handleArgs<Name>(Args...);
+    Tracer->endArguments();
+    if constexpr (std::is_same_v<ReturnT, void>) {
       Callee(std::forward<ArgsT>(Args)...);
-      } else {
-      ReturnT Return = Callee(std::forward<ArgsT>(Args)...);
-      return Return;
-
-      }
+      Tracer->printVoid();
     } else {
-      if constexpr (std::is_same_v<ReturnT, void>)
-      Callee(std::forward<ArgsT>(Args)...);
-      else
-      return Callee(std::forward<ArgsT>(Args)...);
+      ReturnT Return = Callee(std::forward<ArgsT>(Args)...);
+      handleReturn(Return);
+      return Return;
     }
+  } else {
+    if constexpr (std::is_same_v<ReturnT, void>)
+      Callee(std::forward<ArgsT>(Args)...);
+    else
+      return Callee(std::forward<ArgsT>(Args)...);
+  }
 }
