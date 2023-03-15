@@ -233,14 +233,16 @@ static std::string instruction(const yield::Instruction &Instruction,
   std::string Result = taggedText(Instruction);
   size_t Tail = Instruction.Disassembled().size() + 1;
 
-  Tag Location = Tag(tags::Span)
-                   .addAttribute(attributes::LocationDefinition,
-                                 serializedLocation(ranks::Instruction,
+  std::string InstructionLocation = serializedLocation(ranks::Instruction,
                                                     Function.Entry(),
                                                     BasicBlock.ID(),
-                                                    Instruction.Address()));
+                                                    Instruction.Address());
+  Tag Location = Tag(tags::Span)
+                   .addAttribute(attributes::LocationDefinition, InstructionLocation);
+
   Tag Out = Tag(tags::Div, std::move(Result))
-              .addAttribute(attributes::Scope, scopes::Instruction);
+              .addAttribute(attributes::Scope, scopes::Instruction)
+              .addAttribute(attributes::ScopeLocation, InstructionLocation);
 
   if (AddTargets) {
     auto Targets = targets(BasicBlock, Function, Binary);
@@ -322,8 +324,6 @@ std::string yield::ptml::functionAssembly(const yield::Function &Function,
     Result += labeledBlock<true>(BasicBlock, Function, Binary);
   }
 
-  using pipeline::serializedLocation;
-  namespace ranks = revng::ranks;
   return ::Tag(tags::Div, Result)
     .addAttribute(attributes::Scope, scopes::Function)
     .serialize();
