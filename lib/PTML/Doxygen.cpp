@@ -436,7 +436,7 @@ gatherReturnValueComments(const model::Binary &Binary,
                                      model::editPath::returnValueComment(*FT));
     }
 
-    for (const model::TypedRegister &ReturnValue : FT->ReturnValues()) {
+    for (const model::NamedTypedRegister &ReturnValue : FT->ReturnValues()) {
       model::Register::Values Register = ReturnValue.Location();
 
       if (!ReturnValue.Comment().empty()) {

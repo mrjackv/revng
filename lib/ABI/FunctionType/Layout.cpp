@@ -193,7 +193,7 @@ ToRawConverter::convert(const model::CABIFunctionType &FunctionType,
 
     // The return value uses registers: pass them through to the new type.
     for (model::Register::Values Register : ReturnValue.Registers) {
-      model::TypedRegister Converted;
+      model::NamedTypedRegister Converted;
       Converted.Location() = Register;
 
       const model::QualifiedType &ReturnType = FunctionType.ReturnType();
@@ -219,7 +219,7 @@ ToRawConverter::convert(const model::CABIFunctionType &FunctionType,
 
     revng_assert(!ABI.GeneralPurposeReturnValueRegisters().empty());
     auto FirstRegister = ABI.GeneralPurposeReturnValueRegisters()[0];
-    model::TypedRegister ReturnPointer(FirstRegister);
+    model::NamedTypedRegister ReturnPointer(FirstRegister);
     ReturnPointer.Type() = std::move(ReturnType);
     NewType.ReturnValues().insert(std::move(ReturnPointer));
 
@@ -801,7 +801,7 @@ Layout::Layout(const model::RawFunctionType &Function) {
   }
 
   // Lay the return value out.
-  for (const model::TypedRegister &Register : Function.ReturnValues()) {
+  for (const model::NamedTypedRegister &Register : Function.ReturnValues()) {
     auto &ReturnValue = ReturnValues.emplace_back();
     ReturnValue.Registers = { Register.Location() };
     ReturnValue.Type = Register.Type();
