@@ -236,7 +236,7 @@ private:
 
   CSVSet findWrittenRegisters(llvm::Function *F);
 
-  UpcastablePointer<model::Type>
+  model::UpcastableTypeDefinition
   buildPrototypeForIndirectCall(const FunctionSummary &CallerSummary,
                                 const efa::BasicBlock &CallerBlock);
 
@@ -666,7 +666,7 @@ void DetectABI::recordRegisters(const efa::CSVSet &CSVs, auto Inserter) {
     auto RegisterSize = model::Register::getSize(Register);
     NamedTypedRegister TR(Register);
     TR.Type() = {
-      Binary->getPrimitiveType(PrimitiveTypeKind::Generic, RegisterSize), {}
+      Binary->getPrimitiveType(model::PrimitiveKind::Generic, RegisterSize), {}
     };
     Inserter.insert(TR);
   }
@@ -689,8 +689,8 @@ void DetectABI::finalizeModel() {
     // Replace function attributes
     Function.Attributes() = Summary.Attributes;
 
-    auto NewType = makeType<RawFunctionType>();
-    auto &FunctionType = *llvm::cast<RawFunctionType>(NewType.get());
+    auto NewType = makeTypeDefinition<RawFunctionDefinition>();
+    auto &FunctionType = *llvm::cast<RawFunctionDefinition>(NewType.get());
 
     FunctionType.Architecture() = getCodeArchitecture(EntryPC);
 
@@ -797,7 +797,7 @@ void DetectABI::propagatePrototypesInFunction(model::Function &Function) {
 
   // Select new prototype for wrapper function
   if (SuccessorIsCall) {
-    model::TypePath Prototype = getPrototype(*Binary, Entry, Block, *Call);
+    auto Prototype = getPrototype(*Binary, Entry, Block, *Call);
 
     using abi::FunctionType::Layout;
     // Get layout of wrapped function
@@ -832,7 +832,8 @@ void DetectABI::propagatePrototypesInFunction(model::Function &Function) {
     revng_log(Log, "WritesOnlyRegisters: " << WritesOnlyRegisters);
 
     // When above conditions are met, overwrite wrappers prototype with
-    // wrapped function prototype (CABIFunctionType or RawFunctionType)
+    // wrapped function prototype (`CABIFunctionDefinition` or
+    // `RawFunctionDefinition`)
     if (not WritesSP and not WritesCalleeArgs and not WritesCalleeReturnValues
         and WritesOnlyRegisters) {
 
@@ -863,13 +864,13 @@ void DetectABI::propagatePrototypesInFunction(model::Function &Function) {
   model::promoteOriginalName(Binary);
 }
 
-UpcastablePointer<model::Type>
+model::UpcastableTypeDefinition
 DetectABI::buildPrototypeForIndirectCall(const FunctionSummary &CallerSummary,
                                          const efa::BasicBlock &CallerBlock) {
   using namespace model;
 
-  auto NewType = makeType<RawFunctionType>();
-  auto &CallType = *llvm::cast<RawFunctionType>(NewType.get());
+  auto NewType = makeTypeDefinition<RawFunctionDefinition>();
+  auto &CallType = *llvm::cast<RawFunctionDefinition>(NewType.get());
   {
     CallType.Architecture() = getCodeArchitecture(CallerBlock.ID().start());
 

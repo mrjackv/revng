@@ -36,7 +36,7 @@ public:
 
 public:
   FunctionSummary prototype(const AttributesSet &Attributes,
-                            const model::TypePath &Prototype) {
+                            const model::TypeDefinitionPath &Prototype) {
     FunctionSummary Summary(Attributes, ABICSVs, {}, {}, {});
     if (Prototype.empty())
       return Summary;
