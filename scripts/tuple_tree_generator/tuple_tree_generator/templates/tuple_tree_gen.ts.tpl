@@ -114,7 +114,7 @@ export {% if class_.abstract %}abstract{% endif %} class {{class_.name}} {% if c
         {%- endif %}
         {%- if completely_optional(class_) %}
         if (rawObject === undefined) {
-            rawObject = {};
+            rawObject = {} as I{{class_.name}};
         }
         {%- endif %}
         {%- if class_.inherits %}
@@ -131,6 +131,8 @@ export {% if class_.abstract %}abstract{% endif %} class {{class_.name}} {% if c
 
     {% if class_.abstract %}
     static parse(rawObject: I{{class_.name}}): {{class_.name}} {
+        if (rawObject === undefined)
+            return undefined;
         switch(rawObject.Kind) {
         {%- for child in class_.children %}
         case "{{child.name}}":
@@ -169,11 +171,13 @@ export {% if class_.abstract %}abstract{% endif %} class {{class_.name}} {% if c
         const result = {{ "super.toJSON()" if class_.inherits else "{}" }};
         {%- for field in class_.fields %}
         {%- if is_optional(field) %}
+        {%- if is_upcastable(field) %}
+        if (!deepEqual(this.{{ field.name }}, {} as I{{ field.type }})) {
+        {%- else %}
         if (!deepEqual(this.{{ field.name }}, {{ default_value(field) }})) {
+        {%- endif %}
             result["{{ field.name }}"] = this.{{ field.name }};
         }
-        {%- else %}
-        result["{{ field.name }}"] = this.{{ field.name }};
         {%- endif %}
         {%- endfor %}
         return result as I{{ class_.name }};

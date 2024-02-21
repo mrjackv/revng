@@ -15,7 +15,7 @@ from gql import Client, gql
 from gql.client import AsyncClientSession
 from gql.transport.aiohttp import AIOHTTPTransport
 
-from revng.pipeline_description import Artifacts, YamlLoader  # type: ignore
+from revng.pipeline_description import YamlLoader  # type: ignore
 
 from .daemon_handler import DaemonHandler
 
@@ -108,7 +108,7 @@ def produce_artifacts(filter_: List[str] | None = None):
 
         for step_name in topo_sorter.static_order():
             step = steps[step_name]
-            if step.Artifacts == Artifacts():
+            if not step.Artifacts:
                 continue
 
             artifacts_container = step.Artifacts.Container
