@@ -7,5 +7,6 @@ Functions:
   - OriginalName: draof
     Prototype: "/Types/1-RawFunctionType"
 Types:
-  - Arguments: []
+  - Kind: RawFunctionType
     ID: 1
+    Arguments: []
