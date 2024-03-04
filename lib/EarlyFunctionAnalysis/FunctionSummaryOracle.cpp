@@ -36,9 +36,9 @@ public:
 
 public:
   FunctionSummary prototype(const AttributesSet &Attributes,
-                            const model::DefinitionReference &Prototype) {
+                            const model::TypeDefinition *Prototype) {
     FunctionSummary Summary(Attributes, ABICSVs, {}, {}, {});
-    if (Prototype.empty())
+    if (Prototype == nullptr)
       return Summary;
 
     // Drop known to be preserved registers from `Summary.ClobberedRegisters`.
@@ -48,7 +48,7 @@ public:
     auto IgnoreNullptr = std::views::filter([](const auto *Pointer) -> bool {
       return Pointer != nullptr;
     });
-    for (auto *CSV : abi::FunctionType::calleeSavedRegisters(Prototype)
+    for (auto *CSV : abi::FunctionType::calleeSavedRegisters(*Prototype)
                        | TransformToCSV | IgnoreNullptr) {
       Summary.ClobberedRegisters.erase(CSV);
     }
@@ -58,7 +58,7 @@ public:
     if constexpr (Level == PrototypeImportLevel::None)
       return Summary;
 
-    Summary.ElectedFSO = abi::FunctionType::finalStackOffset(Prototype);
+    Summary.ElectedFSO = abi::FunctionType::finalStackOffset(*Prototype);
 
     // Stop importing prototype here, if callee also needs final stack offset.
     if constexpr (Level == PrototypeImportLevel::None)
@@ -70,7 +70,7 @@ public:
     }
 
     auto [ArgumentRegisters,
-          ReturnValueRegisters] = abi::FunctionType::usedRegisters(Prototype);
+          ReturnValueRegisters] = abi::FunctionType::usedRegisters(*Prototype);
     for (Register ArgumentRegister : ArgumentRegisters) {
       llvm::StringRef Name = model::Register::getCSVName(ArgumentRegister);
       if (llvm::GlobalVariable *CSV = M.getGlobalVariable(Name, true))
@@ -185,7 +185,7 @@ FunctionSummaryOracle importImpl(llvm::Module &M,
                                                 | revng::to<CSVSet>() };
 
   // Import the default prototype
-  Oracle.setDefault(Importer.prototype({}, Binary.DefaultPrototype()));
+  Oracle.setDefault(Importer.prototype({}, Binary.defaultPrototype()));
 
   std::map<llvm::BasicBlock *, MetaAddress> InlineFunctions;
 
@@ -208,7 +208,8 @@ FunctionSummaryOracle importImpl(llvm::Module &M,
     AttributesSet Attributes;
     for (auto &ToCopy : Function.Attributes())
       Attributes.insert(ToCopy);
-    auto Summary = Importer.prototype(Attributes, Function.prototype(Binary));
+    const auto *Prototype = Binary.prototypeOrDefault(Function.prototype());
+    auto Summary = Importer.prototype(Attributes, Prototype);
 
     // Create function to inline, if necessary
     if (Summary.Attributes.contains(model::FunctionAttribute::Inline))
@@ -219,13 +220,13 @@ FunctionSummaryOracle importImpl(llvm::Module &M,
 
   // Register all dynamic symbols
   for (const auto &DynamicFunction : Binary.ImportedDynamicFunctions()) {
-    const auto &Prototype = DynamicFunction.prototype(Binary);
     AttributesSet Attributes;
     for (auto &ToCopy : DynamicFunction.Attributes())
       Attributes.insert(ToCopy);
 
+    const auto *Pr = Binary.prototypeOrDefault(DynamicFunction.prototype());
     Oracle.registerDynamicFunction(DynamicFunction.OriginalName(),
-                                   Importer.prototype(Attributes, Prototype));
+                                   Importer.prototype(Attributes, Pr));
   }
 
   return Oracle;

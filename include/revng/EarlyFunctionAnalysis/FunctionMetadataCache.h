@@ -134,7 +134,7 @@ public:
     const efa::BasicBlock &Block = FM.ControlFlowGraph().at(BlockAddress);
 
     // Find the call edge
-    efa::CallEdge *ModelCall = nullptr;
+    const efa::CallEdge *ModelCall = nullptr;
     for (auto &Edge : Block.Successors()) {
       if (auto *CE = dyn_cast<efa::CallEdge>(Edge.get())) {
         revng_assert(ModelCall == nullptr);
@@ -149,14 +149,13 @@ public:
   /// \return the prototype associated to a CallInst.
   ///
   /// \note If the model type of the parent function is not provided, this will
-  /// be
-  ///       deduced using the Call instruction's parent function.
+  ///       be deduced using the Call instruction's parent function.
   ///
-  /// \note If the callsite has no associated prototype, e.g. the called
-  /// functions
-  ///       is not an isolated function, a null pointer is returned.
-  inline model::DefinitionReference
-  getCallSitePrototype(const model::Binary &Binary,
+  /// \note If the call site has no associated prototype, e.g. the called
+  ///       function is not an isolated function, a null pointer is returned.
+  template<ConstOrNot<model::Binary> T>
+  inline ConstPtrIfConst<T, model::TypeDefinition>
+  getCallSitePrototype(T &Binary,
                        CallInst Call,
                        const model::Function *ParentFunction = nullptr) {
     if (not ParentFunction)
@@ -164,12 +163,12 @@ public:
                                                 Traits::getFunction(Call));
 
     if (not ParentFunction)
-      return {};
+      return nullptr;
 
     const auto &[Edge, BlockAddress] = getCallEdge(Binary, Call);
 
     if (not Edge)
-      return {};
+      return nullptr;
 
     return getPrototype(Binary, ParentFunction->Entry(), BlockAddress, *Edge);
   }
