@@ -213,9 +213,10 @@ private:
   const model::UpcastableType &record(const DWARFDie &Die,
                                       model::UpcastableType &&Type,
                                       bool IsNotPlaceholder) {
-    revng_assert(!Type.empty());
+    revng_assert(!Type.isEmpty());
     if (not IsNotPlaceholder) {
-      // `nullptr` (as in, no definition) represents a primitive placeholder.
+      // `model::UpcastableType::empty()` (as in, no definition) represents
+      // a primitive placeholder.
       Placeholders[Die.getOffset()] = Type->tryGetAsDefinition();
     }
 
@@ -231,8 +232,8 @@ private:
   std::pair<TypeSearchResult, model::UpcastableType>
   findType(const DWARFDie &Die) {
     auto Found = Importer.findType({ Index, Die.getOffset() });
-    if (Found.empty())
-      return { TypeSearchResult::Absent, std::move(Found) };
+    if (Found.isEmpty())
+      return { TypeSearchResult::Absent, model::UpcastableType::empty() };
     else if (Placeholders.contains(Die.getOffset()))
       return { TypeSearchResult::PlaceholderType, std::move(Found) };
     else
@@ -447,7 +448,7 @@ private:
       DWARFDie Origin = DICtx.getDIEForOffset(*MaybeOrigin->getAsReference());
       rc_return rc_recur makeType(Origin);
     } else {
-      rc_return nullptr;
+      rc_return model::UpcastableType::empty();
     }
   }
 
@@ -494,7 +495,7 @@ private:
         if (ChildDie.getTag() == DW_TAG_formal_parameter) {
 
           model::UpcastableType ArgumentType = rc_recur makeType(ChildDie);
-          if (ArgumentType.empty()) {
+          if (ArgumentType.isEmpty()) {
             reportIgnoredDie(Die,
                              "The type of argument " + Twine(Index + 1)
                                + " cannot be resolved");
@@ -553,7 +554,7 @@ private:
           }
 
           model::UpcastableType MemberType = rc_recur makeType(ChildDie);
-          if (MemberType == nullptr) {
+          if (MemberType.isEmpty()) {
             reportIgnoredDie(Die,
                              "The type of member " + Twine(Index + 1)
                                + " cannot be resolved");
@@ -583,7 +584,7 @@ private:
       for (const DWARFDie &ChildDie : Die.children()) {
         if (ChildDie.getTag() == DW_TAG_member) {
           model::UpcastableType MemberType = rc_recur makeType(ChildDie);
-          if (MemberType == nullptr) {
+          if (MemberType.isEmpty()) {
             reportIgnoredDie(Die,
                              "The type of one of the fields cannot be "
                              "resolved");
@@ -608,7 +609,7 @@ private:
       Enum.OriginalName() = Name;
 
       const model::UpcastableType UnderlyingType = rc_recur makeType(Die);
-      if (UnderlyingType.empty()) {
+      if (UnderlyingType.isEmpty()) {
         reportIgnoredDie(Die, "The enum underlying type cannot be resolved");
         rc_return;
       }
@@ -665,7 +666,7 @@ private:
     ScopedSetElement InProgressDie(InProgressDies, &Die);
     if (not InProgressDie.insert()) {
       reportIgnoredDie(Die, "Recursive die");
-      rc_return nullptr;
+      rc_return model::UpcastableType::empty();
     }
 
     auto Tag = Die.getTag();
@@ -696,7 +697,7 @@ private:
 
         if (not HasType) {
           reportIgnoredDie(Die, "Array does not specify element type");
-          rc_return nullptr;
+          rc_return model::UpcastableType::empty();
         }
 
         for (const DWARFDie &ChildDie : Die.children()) {
@@ -708,7 +709,7 @@ private:
             if (MaybeUpperBound and MaybeCount
                 and *MaybeUpperBound != *MaybeCount + 1) {
               reportIgnoredDie(Die, "DW_AT_upper_bound != DW_AT_count + 1");
-              rc_return nullptr;
+              rc_return model::UpcastableType::empty();
             }
 
             if (MaybeUpperBound) {
@@ -720,7 +721,7 @@ private:
               reportIgnoredDie(Die,
                                "Array upper bound/elements count missing or "
                                "invalid");
-              rc_return nullptr;
+              rc_return model::UpcastableType::empty();
             }
           }
         }
@@ -731,7 +732,7 @@ private:
         if (not MaybeByteSize) {
           // TODO: force architecture pointer size
           reportIgnoredDie(Die, "Pointer has no size");
-          rc_return nullptr;
+          rc_return model::UpcastableType::empty();
         }
 
         uint64_t PointerSize = *MaybeByteSize->getAsUnsignedConstant();
@@ -740,15 +741,15 @@ private:
 
       default:
         reportIgnoredDie(Die, "Unknown type");
-        rc_return nullptr;
+        rc_return model::UpcastableType::empty();
       }
 
       rc_return record(Die, std::move(Result), true).copy();
     }
     case TypeSearchResult::PlaceholderType: {
-      if (Type == nullptr) {
+      if (Type.isEmpty()) {
         reportIgnoredDie(Die, "Couldn't materialize type");
-        rc_return nullptr;
+        rc_return model::UpcastableType::empty();
       }
 
       revng_assert(Placeholders.contains(Die.getOffset()));
@@ -762,9 +763,9 @@ private:
     }
 
     case TypeSearchResult::RegularType:
-      if (Type == nullptr) {
+      if (Type.isEmpty()) {
         reportIgnoredDie(Die, "Couldn't materialize type");
-        rc_return nullptr;
+        rc_return model::UpcastableType::empty();
       }
 
       rc_return std::move(Type);
@@ -799,7 +800,7 @@ private:
 
     if (FunctionType.ABI() == model::ABI::Invalid) {
       reportIgnoredDie(Die, "Unknown calling convention");
-      return nullptr;
+      return model::UpcastableType::empty();
     }
 
     // Arguments
@@ -807,11 +808,11 @@ private:
     for (const DWARFDie &ChildDie : Die.children()) {
       if (ChildDie.getTag() == DW_TAG_formal_parameter) {
         model::UpcastableType ArgumentType = makeType(ChildDie);
-        if (ArgumentType.empty()) {
+        if (ArgumentType.isEmpty()) {
           reportIgnoredDie(Die,
                            "The type of argument " + Twine(Index + 1)
                              + " cannot be resolved");
-          return nullptr;
+          return model::UpcastableType::empty();
         }
 
         // Note: at this stage we don't check the size. If an argument is
@@ -861,7 +862,7 @@ private:
           // Get/create the local function
           auto &Function = Model->Functions()[LowPC];
 
-          if (Prototype.empty())
+          if (Prototype.isEmpty())
             revng_log(DILogger, "Can't get the prototype");
           else if (not Function.prototype())
             Function.Prototype() = std::move(Prototype);
@@ -876,7 +877,7 @@ private:
             Function.Attributes().insert(model::FunctionAttribute::NoReturn);
         } else if (not SymbolName.empty() and Functions.contains(SymbolName)) {
           // It's a dynamic function
-          if (Prototype.empty()) {
+          if (Prototype.isEmpty()) {
             reportIgnoredDie(Die, "Couldn't build subprogram prototype");
             continue;
           }
@@ -1377,7 +1378,7 @@ inline void detectAliases(const llvm::object::ObjectFile &ELF,
         // If DynamicFunction doesn't have a prototype, register it for copying
         // it from the leader.
         // Otherwise, record the type as the leader.
-        if (Found and not It->Prototype().empty()) {
+        if (Found and not It->Prototype().isEmpty()) {
           Prototype = It->Prototype().copy();
         } else {
           UnprototypedFunctionsNames.push_back(Name);
@@ -1407,7 +1408,7 @@ inline void detectAliases(const llvm::object::ObjectFile &ELF,
       }
 
       // Consider it as a Dynamic function.
-      if (not Prototype.empty()) {
+      if (not Prototype.isEmpty()) {
         for (const std::string &Name : UnprototypedFunctionsNames) {
           auto It = ImportedDynamicFunctions.find(Name);
           if (It == ImportedDynamicFunctions.end())

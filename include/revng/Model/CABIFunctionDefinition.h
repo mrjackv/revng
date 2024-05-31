@@ -49,10 +49,10 @@ public:
     llvm::SmallVector<const model::Type *, 4> Result;
 
     for (const model::Argument &Argument : Arguments())
-      if (!Argument.Type().empty())
+      if (!Argument.Type().isEmpty())
         Result.push_back(Argument.Type().get());
 
-    if (!ReturnType().empty())
+    if (!ReturnType().isEmpty())
       Result.push_back(ReturnType().get());
 
     return Result;
@@ -61,10 +61,10 @@ public:
     llvm::SmallVector<model::Type *, 4> Result;
 
     for (model::Argument &Argument : Arguments())
-      if (!Argument.Type().empty())
+      if (!Argument.Type().isEmpty())
         Result.push_back(Argument.Type().get());
 
-    if (!ReturnType().empty())
+    if (!ReturnType().isEmpty())
       Result.push_back(ReturnType().get());
 
     return Result;
