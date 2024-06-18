@@ -114,7 +114,7 @@ export /** if class_.abstract **/abstract/** endif **/ class /*= class_.name =*/
         /**- endif **/
         /**- if completely_optional(class_) **/
         if (rawObject === undefined) {
-            rawObject = {} as I/*= class_.name =*/;
+            rawObject = {};
         }
         /**- endif **/
         /**- if class_.inherits **/
@@ -130,9 +130,10 @@ export /** if class_.abstract **/abstract/** endif **/ class /*= class_.name =*/
     }
 
     /** if class_.abstract **/
-    static parse(rawObject: I/*= class_.name =*/): /*= class_.name =*/ {
-        if (rawObject === undefined)
+    static parse(rawObject: I/*= class_.name =*/ | undefined): /*= class_.name =*/ | undefined {
+        if (rawObject === undefined) {
             return undefined;
+        }
         switch(rawObject.Kind) {
         /**- for child in class_.children **/
         case "/*= child.name =*/":
@@ -144,6 +145,9 @@ export /** if class_.abstract **/abstract/** endif **/ class /*= class_.name =*/
     }
 
     static parseClass(obj: /*= class_.name =*/) {
+        if (obj === undefined) {
+            return undefined;
+        }
         switch(obj.Kind) {
         /**- for child in class_.children **/
         case "/*= child.name =*/":
@@ -172,7 +176,7 @@ export /** if class_.abstract **/abstract/** endif **/ class /*= class_.name =*/
         /**- for field in class_.fields **/
         /**- if is_optional(field) **/
         /**- if is_upcastable(field) **/
-        if (!deepEqual(this./*= field.name =*/, {} as I/*= field.type =*/)) {
+        if (this./*= field.name =*/ !== undefined) {
         /**- else **/
         if (!deepEqual(this./*= field.name =*/, /*= default_value(field) =*/)) {
         /**- endif **/
@@ -185,7 +189,8 @@ export /** if class_.abstract **/abstract/** endif **/ class /*= class_.name =*/
         return result as I/*= class_.name =*/;
     }
 
-    static fromString(input: string): /*= class_.name =*/ {
+    static fromString(input: string): /*= class_.name =*/
+            /** if class_.abstract **/ | undefined /** endif **/ {
         const object = yaml.parse(input, yamlParseOptions);
         /**- if class_.abstract **/
         return /*= class_.name =*/.parse(object);
