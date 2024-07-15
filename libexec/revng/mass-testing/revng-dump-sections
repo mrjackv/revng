@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+
+#
+# This file is distributed under the MIT License. See LICENSE.md for details.
+#
+
+# This script prints some information about an executable's sections to stdout,
+# depending on the command line options passed:
+# * With --text-size: the program outputs the size of the `.text` segment (or
+#   equivalent) as an integer (in bytes)
+# * Without --text-size: a JSON is returned containing information about all
+#   sections
+
+import argparse
+import json
+import sys
+from subprocess import PIPE, run
+
+import yaml
+
+
+def find_section_attribute(data: dict, name: str, attr_name: str) -> int | None:
+    for section in data["Sections"]:
+        if section["Name"]["Value"] == name:
+            return section[attr_name]
+    return None
+
+
+def get_text_size(data: dict):
+    format_: str = data["Format"]
+    if format_.startswith("elf"):
+        res = find_section_attribute(data, ".text", "Size")
+    elif format_.startswith("Mach-O"):
+        res = find_section_attribute(data, "__text", "Size")
+    elif format_.startswith("COFF"):
+        res = find_section_attribute(data, ".text", "RawDataSize")
+    else:
+        raise ValueError(f"Invalid format: {format_}")
+
+    return res if res is not None else -1
+
+
+def readobj(filepath: str):
+    proc = run(
+        ["llvm-readobj", "--elf-output-style=JSON", "--sections", filepath],
+        stdout=PIPE,
+        check=True,
+        text=True,
+    )
+    data = yaml.safe_load(proc.stdout)
+
+    result = {}
+    if len(data) == 1:
+        # ELF output
+        result.update(data[0]["FileSummary"])
+        result["Sections"] = []
+        for section in data[0]["Sections"]:
+            result["Sections"].append(section["Section"])
+    elif len(data) == 5:
+        # PE/MACH-O output
+        for i in range(0, 4):
+            result.update(data[i])
+        result["Sections"] = []
+        for section in data[4]["Sections"]:
+            result["Sections"].append(section["Section"])
+    else:
+        raise ValueError()
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--text-size", action="store_true", help="Output the size of the .text section"
+    )
+    parser.add_argument("input", help="Input file")
+    args = parser.parse_args()
+
+    readobj_data = readobj(args.input)
+    if args.text_size:
+        print(get_text_size(readobj_data))
+    else:
+        json.dump(readobj_data, sys.stdout)
+
+
+if __name__ == "__main__":
+    main()
