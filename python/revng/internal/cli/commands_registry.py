@@ -4,6 +4,7 @@
 
 import argparse
 import dataclasses
+import os
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -78,11 +79,11 @@ class CommandsRegistry:
     def register_command(self, command: Command):
         self.commands[command.namespace + (command.name,)] = command
 
-    def has_command(self, command: str):
-        return self._parse_command(command) in self.commands
+    def has_command(self, command: str, prefix: str):
+        return self._parse_command(command, prefix) in self.commands
 
-    def register_external_command(self, command: str, path: str):
-        self.register_command(ExternalCommand(self._parse_command(command), path))
+    def register_external_command(self, command: str, prefix: str, path: str):
+        self.register_command(ExternalCommand(self._parse_command(command, prefix), path))
 
     def run(self, arguments, options: Options):
         original_options = dict(options.__dict__.items())
@@ -165,10 +166,16 @@ class CommandsRegistry:
         self.namespaces[namespace] = result
         return result
 
-    def _parse_command(self, command: str):
-        parts = command.split("-")
-        total = len(parts)
+    def _parse_command(self, command: str, prefix: str):
+        name = command
         current_namespace: Tuple[str, ...] = ()
+        if "/" in command:
+            path_parts = os.path.split(command)
+            name = path_parts[-1]
+            current_namespace = tuple(path_parts[:-1])
+
+        parts = name[len(prefix) :].split("-")
+        total = len(parts)
 
         start_index = 0
         found = True
