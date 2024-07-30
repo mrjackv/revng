@@ -88,7 +88,7 @@ def popen(command, options: Options, environment: OptionalEnv = None, **kwargs) 
     return Popen(command, env=environment, **kwargs)
 
 
-def try_run(command, options: Options, environment: OptionalEnv = None) -> int:
+def try_run(command, options: Options, environment: OptionalEnv = None, **kwargs) -> int:
     try:
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         process = popen(
@@ -97,6 +97,7 @@ def try_run(command, options: Options, environment: OptionalEnv = None) -> int:
             environment,
             preexec_fn=lambda: signal.signal(signal.SIGINT, signal.SIG_DFL),
             close_fds=False,
+            **kwargs,
         )
         if isinstance(process, int):
             return process
@@ -105,8 +106,8 @@ def try_run(command, options: Options, environment: OptionalEnv = None) -> int:
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
-def run(command, options: Options, environment: OptionalEnv = None):
-    result = try_run(command, options, environment)
+def run(command, options: Options, environment: OptionalEnv = None, **kwargs) -> int:
+    result = try_run(command, options, environment, **kwargs)
     if result != 0:
         sys.exit(result)
 
