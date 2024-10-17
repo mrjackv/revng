@@ -47,4 +47,8 @@ class MassTestingRunCommand(Command):
         elif args.jobs:
             cmd_args.append(f"-j{args.jobs}")
 
-        run(["ninja", "--quiet", "-k0", *cmd_args, "-C", args.build_dir], env=new_env, check=True)
+        run(
+            ["ninja", "--quiet", "-k0", *cmd_args, "-C", args.build_dir, "all"],
+            env=new_env,
+            check=True,
+        )
