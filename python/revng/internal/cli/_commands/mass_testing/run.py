@@ -21,6 +21,7 @@ class MassTestingRunCommand(Command):
 
     def register_arguments(self, parser: argparse.ArgumentParser):
         parser.description = "Run a mass-testing configuration"
+        parser.add_argument("-j", "--jobs", type=int, help="Number of parallel jobs to use")
         parser.add_argument("build_dir", help="Build directory")
 
     def run(self, options: Options):
@@ -40,4 +41,10 @@ class MassTestingRunCommand(Command):
         bin_dir = get_root() / "libexec/revng/mass-testing"
         new_env["PATH"] = f"{bin_dir.resolve()!s}:{new_env['PATH']}"
 
-        run(["ninja", "--quiet", "-k0", "-C", args.build_dir], env=new_env, check=True)
+        cmd_args = []
+        if "MASS_TESTING_RUN_JOBS" in os.environ:
+            cmd_args.append(f"-j{os.environ['MASS_TESTING_RUN_JOBS']}")
+        elif args.jobs:
+            cmd_args.append(f"-j{args.jobs}")
+
+        run(["ninja", "--quiet", "-k0", *cmd_args, "-C", args.build_dir], env=new_env, check=True)
