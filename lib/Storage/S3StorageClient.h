@@ -60,6 +60,8 @@ public:
 private:
   std::string dumpString() const override;
   std::string resolvePath(llvm::StringRef Path);
+  Aws::S3::Model::PutObjectOutcome
+  putObject(Aws::S3::Model::PutObjectRequest &Req);
   friend class S3WritableFile;
 };
 

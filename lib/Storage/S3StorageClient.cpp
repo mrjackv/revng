@@ -23,6 +23,7 @@
 
 #include "revng/Storage/Path.h"
 #include "revng/Support/Assert.h"
+#include "revng/Support/Chrono.h"
 #include "revng/Support/OnQuit.h"
 #include "revng/Support/PathList.h"
 #include "revng/Support/TemporaryFile.h"
@@ -50,7 +51,7 @@ namespace {
 using Aws::Utils::Logging::FormattedLogSystem;
 using Aws::Utils::Logging::LogLevel;
 
-Logger<> Logger("s3-storage");
+Logger<> S3Logger("s3-storage");
 
 class LoggerSystem : public FormattedLogSystem {
 private:
@@ -59,14 +60,14 @@ private:
 public:
   LoggerSystem(LogLevel LogLevel) : FormattedLogSystem(LogLevel) {}
   ~LoggerSystem() override = default;
-  void Flush() override { Logger.flush(); }
+  void Flush() override { S3Logger.flush(); }
 
   void ProcessFormattedStatement(Aws::String &&Statement) override {
     // This function needs to be thread-safe, hence the lock_guard
     // TODO: check if the mangled text is the result of aggressive flushed
     //       and/or if buffering might alleviate this problem
     std::lock_guard Guard(Mutex);
-    revng_log(Logger, Statement);
+    revng_log(S3Logger, Statement);
   }
 };
 
@@ -197,7 +198,7 @@ public:
     }
 
     Request.SetBody(File);
-    Aws::S3::Model::PutObjectOutcome Result = Client.Client.PutObject(Request);
+    Aws::S3::Model::PutObjectOutcome Result = Client.putObject(Request);
     if (not Result.IsSuccess())
       return toError(Result);
 
@@ -443,7 +444,7 @@ llvm::Error S3StorageClient::commit() {
                                                       | std::ios_base::binary);
 
   Request.SetBody(Stream);
-  Aws::S3::Model::PutObjectOutcome Result = Client.PutObject(Request);
+  Aws::S3::Model::PutObjectOutcome Result = putObject(Request);
   if (not Result.IsSuccess())
     return toError(Result);
 
@@ -453,6 +454,17 @@ llvm::Error S3StorageClient::commit() {
 llvm::Error S3StorageClient::setCredentials(llvm::StringRef Credentials) {
   this->Credentials = readCredentials(Credentials);
   return llvm::Error::success();
+}
+
+Aws::S3::Model::PutObjectOutcome
+S3StorageClient::putObject(Aws::S3::Model::PutObjectRequest &Req) {
+  uint64_t Start = getUnixMilliseconds();
+  Aws::S3::Model::PutObjectOutcome Result = Client.PutObject(Req);
+  uint64_t End = getUnixMilliseconds();
+  S3Logger << "Upload of " << Req.GetKey() << " took " << End - Start
+           << " ms\n";
+  S3Logger.flush();
+  return Result;
 }
 
 } // namespace revng
