@@ -32,6 +32,7 @@ public:
     OS << " Path: " << SubPath << "\n";
   }
 
+  llvm::StringRef path() const { return SubPath; }
   bool isValid() const { return Client != nullptr; }
 };
 

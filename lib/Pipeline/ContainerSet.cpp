@@ -11,10 +11,13 @@
 
 #include "revng/Pipeline/ContainerSet.h"
 #include "revng/Pipeline/Errors.h"
+#include "revng/Support/Chrono.h"
 
 using namespace pipeline;
 using namespace llvm;
 using namespace std;
+
+static Logger<> StoreLogger("container-store-time");
 
 ContainerSet ContainerSet::cloneFiltered(const ContainerToTargetsMap &Targets) {
   ContainerSet ToReturn;
@@ -83,7 +86,13 @@ llvm::Error ContainerSet::store(const revng::DirectoryPath &Directory) const {
     if (Container == nullptr)
       continue;
 
-    if (auto Error = Container->store(Filename); !!Error)
+    uint64_t StartTime = getUnixMilliseconds();
+    auto Error = Container->store(Filename);
+    uint64_t EndTime = getUnixMilliseconds();
+    StoreLogger << "Storing " << Filename.path() << " took "
+                << EndTime - StartTime << " ms\n";
+    StoreLogger.flush();
+    if (!!Error)
       return Error;
   }
   return Error::success();

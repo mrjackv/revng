@@ -18,12 +18,15 @@
 #include "revng/Pipeline/Step.h"
 #include "revng/Pipeline/Target.h"
 #include "revng/Support/Assert.h"
+#include "revng/Support/Chrono.h"
 #include "revng/Support/Debug.h"
 #include "revng/Support/ZstdStream.h"
 
 using namespace llvm;
 using namespace std;
 using namespace pipeline;
+
+static Logger<> InvStoreLogger("invalidation-store-time");
 
 namespace pipeline {
 
@@ -460,6 +463,7 @@ llvm::Error Step::loadInvalidationMetadata(const revng::DirectoryPath &Path) {
 llvm::Error
 Step::storeInvalidationMetadata(const revng::DirectoryPath &Path) const {
   for (auto &Container : Containers) {
+    uint64_t StartTime = getUnixMilliseconds();
     if (Container.second == nullptr)
       continue;
 
@@ -487,14 +491,19 @@ Step::storeInvalidationMetadata(const revng::DirectoryPath &Path) const {
       ToStore.emplace_back(std::move(Entry));
     }
 
-    auto File = Path.getFile(Container.first().str() + ".cache.zst")
-                  .getWritableFile();
+    auto Filepath = Path.getFile(Container.first().str() + ".cache.zst");
+    auto File = Filepath.getWritableFile();
     if (not File)
       return File.takeError();
 
     ZstdCompressedOstream OS(File->get()->os(), 5);
     ::serialize(OS, ToStore);
-    if (auto Error = File->get()->commit())
+    auto Error = File->get()->commit();
+    uint64_t EndTime = getUnixMilliseconds();
+    InvStoreLogger << "Storing invalidation " << Filepath.path() << " took "
+                   << EndTime - StartTime << " ms\n";
+    InvStoreLogger.flush();
+    if (Error)
       return Error;
   }
 
