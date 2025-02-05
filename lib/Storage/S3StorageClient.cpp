@@ -87,6 +87,8 @@ void initializeSDK() {
   OnQuit->add([Options = std::move(Options)] { Aws::ShutdownAPI(Options); });
 
   ThreadPool.emplace(llvm::hardware_concurrency(8));
+  dbg << "S3 upload thread pool with " << ThreadPool->getThreadCount()
+      << " threads\n";
 }
 
 } // namespace
