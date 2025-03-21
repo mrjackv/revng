@@ -61,10 +61,13 @@ class EventManager(Thread):
             time.sleep(10)
 
     def save(self) -> bool:
+        print(f"Starting save {time.time()}", flush=True)
         result = self.manager.save()
+        print(f"Save finished {time.time()}", flush=True)
         if result:
             for hook in self.save_hooks:
                 hook(self.manager, cast(str, self.credentials))
+        print(f"Hooks finished {time.time()}", flush=True)
         return result
 
     def handle_event(self, type_: EventType):
