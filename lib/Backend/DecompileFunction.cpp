@@ -1976,7 +1976,7 @@ void CCodeGenerator::emitFunction(bool NeedsLocalStateVar) {
 
     // Mention unused variables by name, to reduce confusion when they suddenly
     // disappear.
-    std::set<llvm::StringRef> Homeless = VariableNameBuilder.homelessNames();
+    std::set<std::string> Homeless = VariableNameBuilder.homelessNames();
     if (not Homeless.empty()) {
       constexpr llvm::StringRef Separator = ", ";
       std::string Message = "The following variables are no longer present "
