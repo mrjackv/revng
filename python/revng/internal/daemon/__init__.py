@@ -17,8 +17,8 @@ from starlette.datastructures import Headers
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
-from starlette.requests import Request
-from starlette.responses import PlainTextResponse
+from starlette.requests import ClientDisconnect, Request
+from starlette.responses import PlainTextResponse, Response
 from starlette.routing import Mount, Route
 from starlette.types import ASGIApp, Receive, Scope, Send
 
@@ -111,6 +111,19 @@ def get_middlewares(manager: Manager, hooks: PluginHooks) -> List[Middleware]:
     ]
 
 
+class NoopResponse(Response):
+    def __init__(self):
+        pass
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        pass
+
+
+async def client_disconnect_handler(request: Request, exc: ClientDisconnect) -> Response:
+    logging.warning("Client disconnected while request was being processed!")
+    return NoopResponse()
+
+
 def make_startlette() -> Starlette:
     capi_initialize(
         signals_to_preserve=(
@@ -189,6 +202,7 @@ def make_startlette() -> Starlette:
         routes=routes,
         on_startup=[startup],
         on_shutdown=[shutdown],
+        exception_handlers={ClientDisconnect: client_disconnect_handler},  # type: ignore
     )
 
 
