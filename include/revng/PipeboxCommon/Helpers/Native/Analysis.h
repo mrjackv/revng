@@ -35,12 +35,12 @@ public:
                           const revng::pypeline::Request &Incoming,
                           llvm::StringRef Configuration) override {
     using namespace revng::pypeline::helpers::native;
-    return AnalysisRunner<ContainerListUnwrapper>::run(Instance,
-                                                       &T::run,
-                                                       TheModel,
-                                                       Incoming,
-                                                       Configuration,
-                                                       Containers);
+    return runAnalysis(Instance,
+                       &T::run,
+                       TheModel,
+                       Incoming,
+                       Configuration,
+                       Containers);
   }
 };
 
