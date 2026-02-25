@@ -386,8 +386,7 @@ add_custom_command(
           "share/doc/revng/user-manual/tutorial/running-analyses.md"
           "share/doc/revng/what-is-revng.md"
           "share/doc/revng/index.md"
-          generate-revngModel-tuple-tree-code
-          generate-revngPipeline-tuple-tree-code
+          install-all-wheels
           python/revng/internal/cli/_commands/process_docs_yaml/pipeline.md.tpl
           python/revng/internal/cli/_commands/process_docs_yaml/artifacts.md.tpl
           python/revng/internal/cli/_commands/process_docs_yaml/analyses.md.tpl

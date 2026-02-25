@@ -38,10 +38,6 @@ function(python_module)
       OUTPUT_VARIABLE MODULE_INIT_CONTENTS)
     file(
       WRITE
-      "${CMAKE_BINARY_DIR}/${PYTHON_INSTALL_PATH}/${PYTHON_MODULE_MODULE_INIT}"
-      "${MODULE_INIT_CONTENTS}")
-    file(
-      WRITE
       "${CMAKE_BINARY_DIR}/build-wheel/${PYTHON_MODULE_WHEEL}/${PYTHON_MODULE_MODULE_INIT}"
       "${MODULE_INIT_CONTENTS}")
     list(
@@ -52,9 +48,6 @@ function(python_module)
   endif()
 
   foreach(MODULE_FILE ${PYTHON_MODULE_MODULE_FILES})
-    configure_file(
-      "${MODULE_FILE}"
-      "${CMAKE_BINARY_DIR}/${PYTHON_INSTALL_PATH}/${MODULE_FILE}" COPYONLY)
     configure_file(
       "${MODULE_FILE}"
       "${CMAKE_BINARY_DIR}/build-wheel/${PYTHON_MODULE_WHEEL}/${MODULE_FILE}"
@@ -68,9 +61,9 @@ function(python_module)
     add_custom_command(
       OUTPUT
         "${CMAKE_BINARY_DIR}/build-wheel/${PYTHON_MODULE_WHEEL}/${MODULE_FILE}"
-      DEPENDS "${CMAKE_BINARY_DIR}/${PYTHON_INSTALL_PATH}/${MODULE_FILE}"
+      DEPENDS "${CMAKE_BINARY_DIR}/python/${MODULE_FILE}"
       COMMAND
-        cp -a "${CMAKE_BINARY_DIR}/${PYTHON_INSTALL_PATH}/${MODULE_FILE}"
+        cp -a "${CMAKE_BINARY_DIR}/python/${MODULE_FILE}"
         "${CMAKE_BINARY_DIR}/build-wheel/${PYTHON_MODULE_WHEEL}/${MODULE_FILE}")
     list(
       APPEND "WHEEL_FILES_${PYTHON_MODULE_WHEEL}"
@@ -107,6 +100,9 @@ endfunction()
 #
 # Wheel generation
 #
+add_custom_target(install-all-wheels ALL)
+add_dependencies(revng-all-binaries install-all-wheels)
+
 function(python_wheel)
   set(options)
   set(oneValueArgs NAME PYPROJECT README)
@@ -137,16 +133,26 @@ function(python_wheel)
                     DEPENDS "${CMAKE_BINARY_DIR}/${WHEEL_OUTPUT_NAME}")
   install(FILES "${CMAKE_BINARY_DIR}/${WHEEL_OUTPUT_NAME}"
           DESTINATION "${CMAKE_INSTALL_PREFIX}/share/python")
-  install(
-    CODE "execute_process(COMMAND \"${CMAKE_CURRENT_SOURCE_DIR}/wheel-install.sh\" \
-\"${CMAKE_BINARY_DIR}/${WHEEL_OUTPUT_NAME}\")")
-endfunction()
 
-#
-# Install scripts
-#
-configure_file("scripts/revng" "${CMAKE_BINARY_DIR}/bin/revng")
-configure_file("scripts/revng" "${CMAKE_BINARY_DIR}/bin/revng2")
+  add_custom_command(
+    OUTPUT "${CMAKE_BINARY_DIR}/.${PYTHON_WHEEL_NAME}-installed"
+    COMMAND
+      python -m pip install --quiet --compile --no-index --no-build-isolation
+      --ignore-installed --no-deps --prefix "${CMAKE_BINARY_DIR}"
+      "${CMAKE_BINARY_DIR}/${WHEEL_OUTPUT_NAME}"
+    COMMAND touch "${CMAKE_BINARY_DIR}/.${PYTHON_WHEEL_NAME}-installed"
+    DEPENDS "${CMAKE_BINARY_DIR}/${WHEEL_OUTPUT_NAME}")
+
+  add_custom_target(
+    "install-${PYTHON_WHEEL_NAME}-wheel"
+    DEPENDS "${CMAKE_BINARY_DIR}/.${PYTHON_WHEEL_NAME}-installed")
+  add_dependencies(install-all-wheels "install-${PYTHON_WHEEL_NAME}-wheel")
+
+  list(APPEND "PYTHON_WHEELS" "${PYTHON_WHEEL_NAME}")
+  set("PYTHON_WHEELS"
+      "${PYTHON_WHEELS}"
+      PARENT_SCOPE)
+endfunction()
 
 #
 # Install revng
@@ -481,7 +487,7 @@ set_target_properties(
   PROPERTIES LINKER_LANGUAGE CXX
              PREFIX ""
              LIBRARY_OUTPUT_DIRECTORY
-             "${CMAKE_BINARY_DIR}/${PYTHON_INSTALL_PATH}/revng/internal")
+             "${CMAKE_BINARY_DIR}/python/revng/internal")
 target_link_libraries(
   "${CPP_MODULE_NAME}" PUBLIC ${Python_LIBRARIES} ${LLVM_LIBRARIES} nanobind
                               revngSupport revngModel)
@@ -505,3 +511,23 @@ python_wheel(NAME revng_internal PYPROJECT revng/internal/pyproject.toml README
              revng/internal/README.md)
 python_wheel(NAME pypeline PYPROJECT revng/pypeline/pyproject.toml README
              revng/pypeline/README.md)
+
+#
+# Copy all wheel files
+#
+
+install(
+  DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}"
+  USE_SOURCE_PERMISSIONS)
+install(
+  DIRECTORY "${CMAKE_BINARY_DIR}/${PYTHON_INSTALL_PATH}/revng"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/${PYTHON_INSTALL_PATH}"
+  USE_SOURCE_PERMISSIONS)
+foreach(WHEEL_NAME ${PYTHON_WHEELS})
+  install(
+    DIRECTORY
+      "${CMAKE_BINARY_DIR}/${PYTHON_INSTALL_PATH}/${WHEEL_NAME}-${PYTHON_WHL_VERSION}.dist-info"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/${PYTHON_INSTALL_PATH}"
+    USE_SOURCE_PERMISSIONS)
+endforeach()
