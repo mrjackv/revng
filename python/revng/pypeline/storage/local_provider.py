@@ -317,6 +317,9 @@ class LocalStorageProviderFactory(StorageProviderFactory):
         async with project_provider() as provider:
             yield provider
 
+    def get_notification_websocket(self) -> str | None:
+        return None
+
 
 TemporaryProviderTuple = tuple["LocalStorageProvider", TemporaryDirectory]
 
@@ -363,6 +366,9 @@ class TemporaryLocalStorageProviderFactory(StorageProviderFactory):
         # projects can proceed in parallel
         async with project_provider() as provider:
             yield provider[0]
+
+    def get_notification_websocket(self) -> str | None:
+        return None
 
 
 class LocalStorageProvider(StorageProvider):
@@ -635,6 +641,7 @@ class LocalStorageProvider(StorageProvider):
         if current_model != new_model:
             # if so, write the new model and update the epoch
             self._write_model(new_model)
+        self._send_invalidation(invalidated, self.epoch)
         return SetModelResult(self.epoch, invalidated)
 
     def _write_model(self, new_model: Model) -> int:
