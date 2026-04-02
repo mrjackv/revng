@@ -81,6 +81,12 @@ public:
     return T::checkPrecondition(Model);
   }
 
+  bool invalidateCheck(const ModelDiff &Diff) const
+    requires detail::HasPipeRunInvalidate<T>
+  {
+    return T::invalidateCheck(Diff);
+  }
+
   std::vector<std::set<ObjectID>>
   invalidate(const revng::pypeline::InvalidationData &ID,
              const ModelDiff &Diff) const

@@ -620,6 +620,10 @@ class Pipeline:
             if not node.task.has_custom_invalidation():
                 continue
 
+            # Run the prelimiary check for the pipe
+            if not node.task.invalidate_check(diff):
+                continue
+
             # Fetch the custom invalidation data from storage
             configuration_id = node.configuration_id(configuration)
             invalidation_data = storage_provider.get_custom_invalidation_data(

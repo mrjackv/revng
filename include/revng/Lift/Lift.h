@@ -217,6 +217,8 @@ public:
 public:
   static llvm::Error checkPrecondition(const class Model &Model);
 
+  static bool invalidateCheck(const ModelDiff &Diff);
+
   static std::vector<std::set<ObjectID>>
   invalidate(const InvalidationData &Data, const ModelDiff &Diff);
 };

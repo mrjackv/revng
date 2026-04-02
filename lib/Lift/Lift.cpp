@@ -191,6 +191,17 @@ llvm::Error Lift::checkPrecondition(const class Model &Model) {
                            RawBinaryView::checkPrecondition(Binary));
 }
 
+bool Lift::invalidateCheck(const ModelDiff &Diff) {
+  using Fields = TupleLikeTraits<model::Binary>::Fields;
+  size_t FunctionsIndex = static_cast<size_t>(Fields::Functions);
+  for (const auto &Change : Diff.get().Changes) {
+    if (Change.Path.size() == 1
+        and Change.Path[0].get<size_t>() == FunctionsIndex)
+      return true;
+  }
+  return false;
+}
+
 std::vector<std::set<ObjectID>> Lift::invalidate(const InvalidationData &Data,
                                                  const ModelDiff &Diff) {
   auto LLVMModuleData = Data.at(1);

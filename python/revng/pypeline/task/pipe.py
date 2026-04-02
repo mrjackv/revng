@@ -175,6 +175,14 @@ class Pipe(ABC):
         """
         return []
 
+    def invalidate_check(self, diff: ModelDiff) -> bool:
+        """
+        Optional method that subclasses can override.
+        Given a diff, report if the `invalidate` method should be called with
+        the invalidation data to compute additional objects to invalidate.
+        """
+        return False
+
     def invalidate(
         self, invalidation_data: PipeCustomInvalidation, diff: ModelDiff
     ) -> list[ObjectSet]:
@@ -187,4 +195,7 @@ class Pipe(ABC):
         return []
 
     def has_custom_invalidation(self):
-        return self.__class__.invalidate is not Pipe.invalidate
+        return (
+            self.__class__.invalidate_check is not Pipe.invalidate_check
+            and self.__class__.invalidate is not Pipe.invalidate
+        )

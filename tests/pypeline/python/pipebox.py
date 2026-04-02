@@ -574,6 +574,9 @@ class GeneratorPipeWithInvalidation(Pipe):
         # any object invalidated is due to this pipe's `invalidate` function
         return PipeDependencies([[]], [[(object_, b"foo")]])
 
+    def invalidate_check(self, diff: ModelDiff) -> bool:
+        return True
+
     def invalidate(
         self, invalidation_data: PipeCustomInvalidation, diff: ModelDiff
     ) -> list[ObjectSet]:

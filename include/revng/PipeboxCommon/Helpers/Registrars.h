@@ -177,8 +177,14 @@ struct RegisterPipe {
           });
       }
 
-      if constexpr (HasInvalidate<T>)
+      if constexpr (HasInvalidate<T>) {
+        PipeClass.def("invalidate_check",
+                      [](T &Handle, nanobind::handle_t<ModelDiff> Diff) {
+                        ModelDiff *CppDiff = nanobind::cast<ModelDiff *>(Diff);
+                        return Handle.invalidateCheck(*CppDiff);
+                      });
         PipeClass.def("invalidate", &python::invalidate<T>);
+      }
     });
 
     // Native

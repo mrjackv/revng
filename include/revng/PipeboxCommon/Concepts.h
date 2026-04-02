@@ -182,6 +182,7 @@ template<typename T>
 concept HasInvalidate = requires(const T &A,
                                  const revng::pypeline::InvalidationData &ID,
                                  const ModelDiff &Diff) {
+  { A.invalidateCheck(Diff) } -> std::same_as<bool>;
   { A.invalidate(ID, Diff) } -> std::same_as<std::vector<std::set<ObjectID>>>;
 };
 
