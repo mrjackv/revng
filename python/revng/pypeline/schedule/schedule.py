@@ -22,7 +22,7 @@ from revng.pypeline.task.task import TaskArgumentAccess
 from revng.pypeline.utils import PypelineException
 from revng.pypeline.utils.logger import pypeline_logger
 
-from .scheduled_task import ScheduledTask
+from .scheduled_task import ScheduledTaskBase
 
 
 class Schedule:
@@ -35,14 +35,14 @@ class Schedule:
     def __init__(
         self,
         declarations: Set[ContainerDeclaration],
-        target_task: ScheduledTask,
+        target_task: ScheduledTaskBase,
         configuration: PipelineConfiguration,
         model: ReadOnlyModel,
         storage_provider: StorageProvider,
     ):
         self.declarations = set(declarations)
         self.target_task = target_task
-        self.tasks: Set[ScheduledTask] = set(target_task.all_dependencies())
+        self.tasks: Set[ScheduledTaskBase] = set(target_task.all_dependencies())
         self.configuration: PipelineConfiguration = configuration
         self.model = model
         self.storage_provider = storage_provider
@@ -54,7 +54,7 @@ class Schedule:
 
         graph = Graph()
 
-        nodes_map: Dict[ScheduledTask, Graph.Node] = {}
+        nodes_map: Dict[ScheduledTaskBase, Graph.Node] = {}
 
         def label(requests: Requests) -> str:
             result = ""
@@ -62,7 +62,7 @@ class Schedule:
                 result += f"{container.name}:\n  " + "\n  ".join(str(x) for x in objects) + "\n"
             return result
 
-        def get_node(node: ScheduledTask) -> Graph.Node:
+        def get_node(node: ScheduledTaskBase) -> Graph.Node:
             if node not in nodes_map:
                 new_node = Graph.Node(node.node.task.name)
                 if node.completed:
@@ -75,8 +75,8 @@ class Schedule:
 
             return nodes_map[node]
 
-        to_visit: List[ScheduledTask] = [self.target_task]
-        visited: Set[ScheduledTask] = set()
+        to_visit: List[ScheduledTaskBase] = [self.target_task]
+        visited: Set[ScheduledTaskBase] = set()
         while to_visit:
             node = to_visit.pop()
             graph_node = get_node(node)
@@ -125,7 +125,7 @@ class Schedule:
             declaration: declaration.instance() for declaration in self.declarations
         }
 
-        ready: ScheduledTask | None = self._pick_task()
+        ready: ScheduledTaskBase | None = self._pick_task()
 
         while ready:
             pypeline_logger.debug_log(f"Running {ready.node.task.name}")
@@ -160,7 +160,7 @@ class Schedule:
 
         return working_containers
 
-    def _pick_task(self) -> Optional[ScheduledTask]:
+    def _pick_task(self) -> Optional[ScheduledTaskBase]:
         # TODO: use a graph
         for task in self.tasks:
             if task.completed:
@@ -184,12 +184,12 @@ class Schedule:
         for container in self.declarations:
             containers.append({"name": container.name, "type": container.container_type.__name__})
 
-        toposorter: TopologicalSorter[ScheduledTask] = TopologicalSorter()
+        toposorter: TopologicalSorter[ScheduledTaskBase] = TopologicalSorter()
         for task in self.tasks:
             toposorter.add(task, *task.dependencies)
 
         tasks: list[Any] = []
-        visited_tasks: list[ScheduledTask] = []
+        visited_tasks: list[ScheduledTaskBase] = []
         for task in toposorter.static_order():
             if isinstance(task.node.task, Pipe):
                 pipe: Pipe = task.node.task
@@ -255,7 +255,7 @@ class Schedule:
         be discarded when the schedule is executed.
         """
 
-        scheduled_task: ScheduledTask | None = self.target_task
+        scheduled_task: ScheduledTaskBase | None = self.target_task
         # Assume that all the outgoing request of the target task are going to
         # be read, so the caller of the `run` method is implicitly the last reader
         readers_encountered: set[ContainerDeclaration] = {
