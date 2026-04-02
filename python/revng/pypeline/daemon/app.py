@@ -64,13 +64,16 @@ async def invalidation_websocket(websocket: WebSocket):
     try:
         project_id = get_project_id(websocket.headers)
         subscriber = await notification_broker.subscribe(project_id, WebSocketStream(websocket))
-        _, pending = await asyncio.wait(
+        done, pending = await asyncio.wait(
             (
                 asyncio.create_task(shutdown_begun.wait()),
                 asyncio.create_task(subscriber.listen_for_messages()),
             ),
             return_when=asyncio.FIRST_COMPLETED,
         )
+        for done_task in done:
+            if (exc := done_task.exception()) is not None:
+                raise exc
     except WebSocketDisconnect:
         pass
     except Exception as e:
