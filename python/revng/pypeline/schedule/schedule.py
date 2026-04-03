@@ -9,20 +9,19 @@ from typing import Any, Dict, List, Optional, Set
 
 import yaml
 
-from revng.pypeline.container import ConfigurationId, ContainerDeclaration, ContainerSet
+from revng.pypeline.container import ContainerDeclaration, ContainerSet
 from revng.pypeline.graph import Graph
 from revng.pypeline.model import ReadOnlyModel
-from revng.pypeline.pipeline_node import PipelineConfiguration
 from revng.pypeline.runner_context import RunnerContext
 from revng.pypeline.storage.storage_provider import StorageProvider
-from revng.pypeline.task.pipe import Pipe, ScheduledTaskDependencies
+from revng.pypeline.task.pipe import Pipe
 from revng.pypeline.task.requests import Requests
 from revng.pypeline.task.savepoint import SavePoint
 from revng.pypeline.task.task import TaskArgumentAccess
 from revng.pypeline.utils import PypelineException
 from revng.pypeline.utils.logger import pypeline_logger
 
-from .scheduled_task import ScheduledTaskBase
+from .scheduled_task import PipeScheduledTask, SavepointScheduledTask, ScheduledTaskBase
 
 
 class Schedule:
@@ -36,14 +35,12 @@ class Schedule:
         self,
         declarations: Set[ContainerDeclaration],
         target_task: ScheduledTaskBase,
-        configuration: PipelineConfiguration,
         model: ReadOnlyModel,
         storage_provider: StorageProvider,
     ):
         self.declarations = set(declarations)
         self.target_task = target_task
         self.tasks: Set[ScheduledTaskBase] = set(target_task.all_dependencies())
-        self.configuration: PipelineConfiguration = configuration
         self.model = model
         self.storage_provider = storage_provider
 
@@ -119,6 +116,8 @@ class Schedule:
 
         # Notify the tasks which containers are going to be discardable
         self._identify_discardable_containers()
+        # Compute which savepoints are responsible for which pipes
+        self._assign_responsible_pipes()
 
         # Produce a set of working containers
         working_containers: ContainerSet = {
@@ -127,34 +126,15 @@ class Schedule:
 
         ready: ScheduledTaskBase | None = self._pick_task()
 
-        while ready:
+        while ready is not None:
             pypeline_logger.debug_log(f"Running {ready.node.task.name}")
 
-            configuration: ConfigurationId = ready.node.configuration_id(self.configuration)
-
-            task_output: ScheduledTaskDependencies | None = ready.run(
-                working_containers, runner_context
-            )
+            ready.run(working_containers, runner_context)
 
             for declaration, container in sorted(
                 working_containers.items(), key=lambda item: item[0].name
             ):
                 pypeline_logger.debug_log(f"  {declaration.name}: {str(container.objects())}")
-
-            if isinstance(ready.node.task, Pipe):
-                assert task_output is not None
-                assert (
-                    ready.node.savepoint_range is not None
-                ), "Savepoint range should be set for all Pipes"
-                self.storage_provider.add_dependencies(
-                    ready.node.savepoint_range, configuration, task_output.dependencies
-                )
-                if not all(len(x) == 0 for x in task_output.custom_invalidation):
-                    self.storage_provider.add_custom_invalidation_data(
-                        ready.node.id, configuration, task_output.custom_invalidation
-                    )
-            else:
-                assert task_output is None
 
             ready = self._pick_task()
 
@@ -209,7 +189,7 @@ class Schedule:
                         "name": pipe.name,
                         "dependencies": [visited_tasks.index(t) for t in task.dependencies],
                         "static_config": pipe.static_configuration,
-                        "dynamic_config": self.configuration.get(pipe, ""),
+                        "dynamic_config": task.configuration.get(pipe, ""),
                         "args": args,
                     }
                 )
@@ -226,7 +206,7 @@ class Schedule:
                     sp_containers.append(
                         {
                             "name": declaration.name,
-                            "configuration_hash": task.node.configuration_id(self.configuration),
+                            "configuration_hash": task.node.configuration_id(task.configuration),
                             "incoming": incoming,
                             "outgoing": outgoing,
                         }
@@ -288,6 +268,34 @@ class Schedule:
                 # tasks that depend on this one can also expire the container
                 if argument.access == TaskArgumentAccess.WRITE:
                     readers_encountered.discard(container_declaration)
+
+            if len(scheduled_task.dependencies) == 1:
+                scheduled_task = scheduled_task.dependencies[0]
+            else:
+                scheduled_task = None
+
+    def _assign_responsible_pipes(self):
+        """
+        Given a schedule, assign to the SavepointScheduledTask the pipes that
+        it's responsible for.
+        """
+
+        last_savepoint: SavepointScheduledTask | None = None
+        scheduled_task: ScheduledTaskBase | None = self.target_task
+
+        # Inspect the tasks in backward order, from the last one to the first.
+        # A savepoint is responsible for a pipe if its dependency tree reaches
+        # it, stopping at other savepoints. Here we assume we have a straight
+        # line of tasks so it's basically a one-shot backward iteration.
+        while scheduled_task is not None:
+            assert len(scheduled_task.dependencies) in (0, 1)
+
+            if isinstance(scheduled_task, SavepointScheduledTask):
+                last_savepoint = scheduled_task
+            else:
+                assert isinstance(scheduled_task, PipeScheduledTask)
+                if last_savepoint is not None:
+                    last_savepoint.responsible_pipes.append(scheduled_task)
 
             if len(scheduled_task.dependencies) == 1:
                 scheduled_task = scheduled_task.dependencies[0]
