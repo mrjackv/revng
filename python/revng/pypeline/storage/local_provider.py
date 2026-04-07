@@ -32,7 +32,7 @@ from revng.pypeline.utils.pipeline import get_pipeline_description
 from revng.pypeline.utils.registry import get_singleton
 
 from .file_provider import FileRequest
-from .storage_provider import ContainerLocation, FileStorageEntry, InvalidatedObjects
+from .storage_provider import ContainerLocation, FileStorageEntry, InvalidatedObjects, LockType
 from .storage_provider import ObjectsToInvalidate, PipeDependencies, ProjectID, ProjectMetadata
 from .storage_provider import SetModelResult, StorageProvider, StorageProviderFactory
 from .util import _OBJECTID_MAXSIZE, check_kind_structure, check_object_id_supported_by_sql
@@ -274,6 +274,7 @@ class LocalStorageProviderFactory(StorageProviderFactory):
         self,
         base_directory: Path,
         pipeline: Pipeline,
+        lock_type: LockType,
         project_id: ProjectID | None,
         token: str | None,
         cache_dir: str | None,
@@ -317,6 +318,7 @@ class TemporaryLocalStorageProviderFactory(StorageProviderFactory):
         self,
         base_directory: Path,
         pipeline: Pipeline,
+        lock_type: LockType,
         project_id: ProjectID | None,
         token: str | None,
         cache_dir: str | None,

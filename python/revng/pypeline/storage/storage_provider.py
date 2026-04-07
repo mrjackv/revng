@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import enum
 import json
 from abc import ABC, abstractmethod
 from collections.abc import Buffer
@@ -143,6 +144,11 @@ class PipeDependencies:
         return not all(len(x) == 0 for x in self.custom_invalidation)
 
 
+class LockType(enum.Enum):
+    ARTIFACT = enum.auto()
+    ANALYSIS = enum.auto()
+
+
 class StorageProviderFactory(ABC):
     """
     A possibly stateful factory for a specific storage provider.
@@ -172,6 +178,7 @@ class StorageProviderFactory(ABC):
         self,
         base_directory: Path,
         pipeline: Pipeline,
+        lock_type: LockType,
         project_id: ProjectID | None,
         token: str | None,
         cache_dir: str | None,
