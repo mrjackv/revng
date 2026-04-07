@@ -6,10 +6,12 @@ import asyncio
 import base64
 import hashlib
 import os
+import re
 from collections.abc import Buffer
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator, Generic, TypeVar
+from urllib.parse import ParseResult
 
 from xdg import xdg_cache_home
 
@@ -102,3 +104,9 @@ class Locked(Generic[T]):
         """
         async with self._lock:
             yield self._value
+
+
+def join_url(url: ParseResult, path: str) -> str:
+    new_path = os.path.normpath(url.path + path)
+    new_path = re.sub(r"^/+", "/", new_path)
+    return url._replace(path=new_path).geturl()
