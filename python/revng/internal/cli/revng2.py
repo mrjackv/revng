@@ -40,6 +40,7 @@ from revng.pypeline.pipeline import Pipeline
 from revng.pypeline.pipeline_node import PipelineConfiguration
 from revng.pypeline.pipeline_parser import load_pipeline_yaml_file
 from revng.pypeline.runner_context import RunnerContext
+from revng.pypeline.storage.local_provider import LocalStorageProviderFactory
 from revng.pypeline.storage.local_provider import TemporaryLocalStorageProviderFactory
 from revng.pypeline.storage.storage_provider import FileStorageEntry, LockType, StorageProvider
 from revng.pypeline.storage.storage_provider import storage_provider_factory_factory
@@ -336,21 +337,49 @@ def init(
 ):
     """Initialize a new project."""
     model_type = get_singleton(Model)  # type: ignore[type-abstract]
-    model_name = model_type.model_name()
-    model_file = ctx.obj.base_directory / model_name
-    if model_file.exists():
-        raise click.UsageError(
-            f"File {model_name} is already present in the current directory. "
-            "Refusing to overwrite it."
-        )
-    model_file.touch()
-
     if binary is not None:
         model_raw = yaml.safe_dump(generate_model_with_binaries([binary])).encode()
-        with open(model_file, "wb") as f:
-            f.write(model_raw)
     else:
         model_raw = b""
+
+    storage_provider_factory = storage_provider_factory_factory(ctx.obj.storage_provider_url)
+
+    def storage_provider_context():
+        return storage_provider_factory.get(
+            base_directory=ctx.obj.base_directory,
+            pipeline=ctx.obj.pipeline,
+            lock_type=LockType.ANALYSIS,
+            project_id=project_id,
+            token=token,
+            cache_dir=ctx.obj.cache_dir,
+        )
+
+    if isinstance(storage_provider_factory, LocalStorageProviderFactory):
+        model_name = model_type.model_name()
+        model_file = ctx.obj.base_directory / model_name
+        if model_file.exists():
+            raise click.UsageError(
+                f"File {model_name} is already present in the current directory. "
+                "Refusing to overwrite it."
+            )
+        model_file.touch()
+
+        if model_raw != b"":
+            with open(model_file, "wb") as f:
+                f.write(model_raw)
+    else:
+
+        async def set_model(
+            storage_provider_context: AsyncContextManager[StorageProvider], model: Model
+        ):
+            async with storage_provider_context as storage_provider:
+                storage_provider.set_model(set(), [], model)
+                if binary is not None:
+                    file_entry = FileStorageEntry(binary.name, path=binary.resolve())
+                    storage_provider.put_files_in_storage([file_entry])
+
+        model = model_type.deserialize(model_raw)[0]
+        asyncio.run(set_model(storage_provider_context(), model))
 
     if no_initial_auto_analysis:
         return
@@ -369,16 +398,7 @@ def init(
                 storage_provider=storage_provider,
             )
 
-    storage_provider_factory = storage_provider_factory_factory(ctx.obj.storage_provider_url)
-    storage_provider_context = storage_provider_factory.get(
-        base_directory=ctx.obj.base_directory,
-        pipeline=ctx.obj.pipeline,
-        lock_type=LockType.ANALYSIS,
-        project_id=project_id,
-        token=token,
-        cache_dir=ctx.obj.cache_dir,
-    )
-    asyncio.run(async_part_of_command(storage_provider_context))
+    asyncio.run(async_part_of_command(storage_provider_context()))
 
 
 class ValgrindWrapperOption(WrapperOption):
