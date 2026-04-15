@@ -476,6 +476,7 @@ set(REVNG_PYPELINE_MODULE_FILES
     revng/pypeline/cli/common_options.py
     revng/pypeline/cli/context.py
     revng/pypeline/cli/utils.py
+    revng/pypeline/cli/uvicorn.py
     revng/pypeline/cli/wrappers.py
     revng/pypeline/analysis.py
     revng/pypeline/container.py
