@@ -507,11 +507,13 @@ set(REVNG_PYPELINE_MODULE_FILES
     revng/pypeline/storage/storage_provider.py
     revng/pypeline/storage/util.py
     revng/pypeline/storage/__init__.py
+    revng/pypeline/storage/local_provider_migrations/v1.sql
     revng/pypeline/task/__init__.py
     revng/pypeline/task/pipe.py
     revng/pypeline/task/requests.py
     revng/pypeline/task/savepoint.py
     revng/pypeline/task/task.py
+    revng/pypeline/utils/db_migrator.py
     revng/pypeline/utils/default_dict_from_key.py
     revng/pypeline/utils/pipeline.py
     revng/pypeline/utils/registry.py

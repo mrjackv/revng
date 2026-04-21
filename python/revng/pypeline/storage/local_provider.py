@@ -26,6 +26,7 @@ from revng.pypeline.object import ObjectID
 from revng.pypeline.pipeline import Pipeline
 from revng.pypeline.task.pipe import PipeCustomInvalidation
 from revng.pypeline.utils import Locked, crypto_hash
+from revng.pypeline.utils.db_migrator import DBMigrator
 from revng.pypeline.utils.logger import pypeline_logger
 from revng.pypeline.utils.pipeline import get_pipeline_description
 from revng.pypeline.utils.registry import get_singleton
@@ -42,62 +43,6 @@ from .util import compute_hash
 # prefixed, so, to check for all children the check will be
 # target_object_id <= checked_object_id <= CONCAT(target_object_id, _OBJECTID_MASK)  # noqa: E800
 _OBJECTID_MASK = f"x'{"ff" * _OBJECTID_MAXSIZE}'"
-
-CREATE_TABLES = """
-CREATE TABLE IF NOT EXISTS project(
-    id              TEXT PRIMARY KEY CHECK (id = 0),
-    last_fetch         REAL NOT NULL,
-    last_object_save   REAL NOT NULL,
-    last_model_save    REAL NOT NULL,
-    epoch           INT NOT NULL,
-    pipeline_hash   TEXT,
-    version         TEXT,
-    model_hash      TEXT,
-    model_mtime     REAL
-) STRICT;
-INSERT OR IGNORE INTO project
-(id, epoch, last_fetch, last_object_save, last_model_save)
-VALUES (0, 0, 0.0, 0.0, 0.0);
-
-CREATE TABLE IF NOT EXISTS objects(
-    savepoint_id         INT NOT NULL,
-    container_id         TEXT NOT NULL,
-    configuration_hash   TEXT NOT NULL,
-    object_id            BLOB NOT NULL,
-    content              BLOB NOT NULL,
-    PRIMARY KEY (savepoint_id, container_id, configuration_hash, object_id)
-) STRICT;
-
-CREATE INDEX IF NOT EXISTS savepoint_id_on_object ON objects(savepoint_id);
-CREATE INDEX IF NOT EXISTS container_id_on_object ON objects(container_id);
-CREATE INDEX IF NOT EXISTS configuration_hash_on_object ON objects(configuration_hash);
-CREATE INDEX IF NOT EXISTS object_id_on_object ON objects(object_id);
-
-CREATE TABLE IF NOT EXISTS dependencies(
-    savepoint_id_start   INT NOT NULL,
-    savepoint_id_end     INT NOT NULL,
-    container_id         TEXT NOT NULL,
-    configuration_hash   TEXT NOT NULL,
-    object_id            BLOB NOT NULL,
-    model_path           TEXT NOT NULL,
-    PRIMARY KEY (savepoint_id_start, savepoint_id_end, container_id,
-                 configuration_hash, object_id, model_path)
-) STRICT;
-
-CREATE INDEX IF NOT EXISTS model_path_on_dependencies ON dependencies(model_path);
-
-CREATE TABLE IF NOT EXISTS custom_dependencies(
-    pipe_id              INT NOT NULL,
-    configuration_hash   TEXT NOT NULL,
-    argument_index       INT NOT NULL,
-    object_id            BLOB NOT NULL,
-    data                 BLOB NOT NULL,
-    PRIMARY KEY (pipe_id, configuration_hash)
-) STRICT;
-
-CREATE INDEX IF NOT EXISTS custom_dependencies_index
-    ON custom_dependencies(pipe_id, configuration_hash);
-"""
 
 CREATE_TABLE_INVALIDATE = """
 CREATE TEMPORARY TABLE model_paths_{uuid}(
@@ -240,6 +185,33 @@ class CursorWrapper:
             self.connection.commit()
         self.cursor.close()
         return False
+
+
+class Migrator(DBMigrator):
+    def __init__(self, cursor: sqlite3.Cursor):
+        super().__init__(Path(__file__).parent / "local_provider_migrations")
+        self._cursor = cursor
+
+    def _create_tables_if_missing(self):
+        self._cursor.execute(
+            "CREATE TABLE IF NOT EXISTS "
+            "migrations(version INT PRIMARY KEY, applied REAL NOT NULL) STRICT"
+        )
+
+    def _get_last_migration(self) -> int:
+        self._cursor.execute("SELECT MAX(version) FROM migrations")
+        result = self._cursor.fetchone()
+        if result is None or result[0] is None:
+            return 0
+        else:
+            return result[0]
+
+    def _apply_migration(self, version: int, body: str):
+        self._cursor.executescript(body)
+        self._cursor.execute(
+            "INSERT INTO migrations VALUES (?, ?)",
+            (version, datetime.now(timezone.utc).timestamp()),
+        )
 
 
 def _compute_pipeline_hash(pipeline: Pipeline) -> str:
@@ -407,7 +379,8 @@ class LocalStorageProvider(StorageProvider):
 
     def _init_tables(self):
         with self._cursor() as cursor:
-            cursor.executescript(CREATE_TABLES)
+            migrator = Migrator(cursor)
+            migrator.migrate()
 
     def _check_version_and_pipeline_hash(self, pipeline_hash: str):
         with self._cursor() as cursor:
