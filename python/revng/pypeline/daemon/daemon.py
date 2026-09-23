@@ -243,6 +243,11 @@ class Daemon:
         # Return the updated model
         return Response(code=200, body={"epoch": new_epoch, "diff": diff})
 
+    async def model_directory(self) -> Response:
+        model_path = self.storage_provider_factory.model_path(self.base_directory)
+        model_directory = None if model_path is None else str(model_path.parent)
+        return Response(200, body={"path": model_directory})
+
     def socket_path(self) -> Path | None:
         model_path = self.storage_provider_factory.model_path(self.base_directory)
         if model_path is None:

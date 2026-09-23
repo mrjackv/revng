@@ -133,6 +133,10 @@ def make_starlette(
         """Process analysis requests"""
         return await daemon.analyze({**await request.json(), **data})
 
+    @prepare_endpoint
+    async def model_directory_endpoint(request: Request, data: dict) -> Response:
+        return await daemon.model_directory()
+
     async def status(request):
         return PlainTextResponse("OK")
 
@@ -144,6 +148,7 @@ def make_starlette(
         Route("/api/put-file", put_file_endpoint, methods=["POST"]),
         Route("/api/artifact", artifact_endpoint, methods=["POST"]),
         Route("/api/analysis", analysis_endpoint, methods=["POST"]),
+        Route("/api/model-directory", model_directory_endpoint, methods=["GET"]),
         Route("/status", status, methods=["GET"]),
     ]
 
